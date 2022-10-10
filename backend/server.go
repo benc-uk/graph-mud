@@ -1,22 +1,45 @@
 package main
 
 import (
-	"encoding/json"
+	"log"
 	"net/http"
+	"os"
 	"time"
+
+	"github.com/gorilla/mux"
+	"github.com/rs/cors"
 )
 
-// Simple server that listens on port 8080 and returns a JSON response
-// with the current time.
 func main() {
-	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		json.NewEncoder(w).Encode(map[string]string{
-			"message": "Hello, World!",
-			"time":    time.Now().Format(time.RFC3339),
-		})
+	port := os.Getenv("PORT")
+	if port == "" {
+		port = "8000"
+	}
+
+	r := mux.NewRouter()
+	r.HandleFunc("/health", func(resp http.ResponseWriter, req *http.Request) {
+		resp.Header().Set("Content-Type", "application/json")
+		resp.WriteHeader(http.StatusOK)
+		resp.Write([]byte(`{"alive": true}`))
+	})
+	r.HandleFunc("/players", func(resp http.ResponseWriter, req *http.Request) {
+		resp.Header().Set("Content-Type", "application/json")
+		resp.WriteHeader(http.StatusUnauthorized)
+		resp.Write([]byte(`{"error": "hereeeee"}`))
 	})
 
-	if err := http.ListenAndServe(":8080", nil); err != nil {
-		panic(err)
+	// add cors
+	c := cors.New(cors.Options{
+		AllowedOrigins: []string{"*"},
+	})
+
+	srv := &http.Server{
+		Handler:      c.Handler(r),
+		Addr:         ":" + port,
+		WriteTimeout: 15 * time.Second,
+		ReadTimeout:  15 * time.Second,
 	}
+
+	log.Println("### Graph MUD - backend API, listening on port:", port)
+	log.Fatal(srv.ListenAndServe())
 }
