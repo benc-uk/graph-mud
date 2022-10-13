@@ -1,17 +1,18 @@
 <template>
   <div id="home">
-    <div class="logo">🌐 Graph MUD ⚔️</div>
+    <div class="logo">🌍 Nano Realms ⚔️</div>
 
     <button v-if="!loggedIn" @click="login" class="golden-btn">LOGIN</button>
 
     <router-link v-if="loggedIn" to="/play" v-slot="{ href, navigate }">
       <button :href="href" @click="navigate" class="golden-btn">ENTER THE DUNGEON</button>
     </router-link>
-
+    <br />
     <router-link v-if="loggedIn" to="/character" v-slot="{ href, navigate }">
       <button :href="href" @click="navigate" class="golden-btn">EDIT CHARACTER</button>
     </router-link>
 
+    <br />
     <br />
     <br />
     <button v-if="loggedIn" @click="logout" class="golden-btn">LOGOUT</button>
@@ -19,9 +20,9 @@
 </template>
 
 <script lang="ts">
-import { AuthenticationResult } from '@azure/msal-common/dist/response/AuthenticationResult'
 import { defineComponent } from 'vue'
-import { isLoggedIn, msalInstance } from '../auth'
+import { msalInstance } from '@/main'
+import { isLoggedIn } from '@/services/auth'
 
 export default defineComponent({
   name: 'HomePage',
@@ -31,22 +32,32 @@ export default defineComponent({
   }),
 
   methods: {
-    login() {
-      msalInstance
-        .loginPopup()
-        .then((response: AuthenticationResult) => {
-          console.log(response)
-          this.loggedIn = isLoggedIn()
-        })
-        .catch((error: any) => {
-          console.log(error)
-        })
+    async login() {
+      try {
+        const resp = await msalInstance.loginPopup()
+        this.loggedIn = true
+        if (!resp) {
+          throw new Error('No response from login')
+        }
+
+        const allAccts = await msalInstance.getAllAccounts()
+        if (allAccts.length > 0) {
+          console.log('### Found existing account:', allAccts[0])
+          await msalInstance.setActiveAccount(allAccts[0])
+        }
+      } catch (e) {
+        console.error('### Error logging in:', e)
+      }
     },
 
     logout() {
-      msalInstance.browserStorage.clear()
+      // remove msal keys from local storage
+      for (const key of Object.keys(localStorage)) {
+        if (key.startsWith('msal') || key.includes('login')) {
+          localStorage.removeItem(key)
+        }
+      }
       this.loggedIn = false
-      //msalInstance.logout()
     },
   },
 })

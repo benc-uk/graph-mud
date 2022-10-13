@@ -1,0 +1,10 @@
+root = "."
+tmp_dir = "./tmp"
+
+[build]
+  args_bin = []
+  bin = "./tmp/backend"
+  cmd = "go build -o ./tmp/backend ."
+
+[misc]
+  clean_on_exit = true

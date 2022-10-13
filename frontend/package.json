@@ -1,11 +1,12 @@
 {
-  "name": "graph-mud",
+  "name": "nano-realms",
   "version": "0.1.0",
   "private": true,
   "scripts": {
     "serve": "vue-cli-service serve",
     "build": "vue-cli-service build",
-    "lint": "vue-cli-service lint"
+    "lint": "vue-cli-service lint",
+    "lint-fix": "vue-cli-service lint --fix"
   },
   "dependencies": {
     "@azure/msal-browser": "^2.29.0",

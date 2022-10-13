@@ -16,25 +16,29 @@ func main() {
 		port = "8000"
 	}
 
-	r := mux.NewRouter()
-	r.HandleFunc("/health", func(resp http.ResponseWriter, req *http.Request) {
+	router := mux.NewRouter()
+	router.HandleFunc("/health", func(resp http.ResponseWriter, req *http.Request) {
 		resp.Header().Set("Content-Type", "application/json")
 		resp.WriteHeader(http.StatusOK)
-		resp.Write([]byte(`{"alive": true}`))
+		_, _ = resp.Write([]byte(`{"alive": true}`))
 	})
-	r.HandleFunc("/players", func(resp http.ResponseWriter, req *http.Request) {
+
+	router.HandleFunc("/players", func(resp http.ResponseWriter, req *http.Request) {
 		resp.Header().Set("Content-Type", "application/json")
-		resp.WriteHeader(http.StatusUnauthorized)
-		resp.Write([]byte(`{"error": "hereeeee"}`))
+		resp.WriteHeader(http.StatusOK)
+		_, _ = resp.Write([]byte(`{"p1": "hello"}`))
 	})
 
 	// add cors
-	c := cors.New(cors.Options{
-		AllowedOrigins: []string{"*"},
+	cors := cors.New(cors.Options{
+		AllowedOrigins:   []string{"*"},
+		AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE"},
+		AllowedHeaders:   []string{"*"},
+		AllowCredentials: true,
 	})
 
 	srv := &http.Server{
-		Handler:      c.Handler(r),
+		Handler:      cors.Handler(router),
 		Addr:         ":" + port,
 		WriteTimeout: 15 * time.Second,
 		ReadTimeout:  15 * time.Second,

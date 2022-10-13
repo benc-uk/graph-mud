@@ -1,4 +1,4 @@
-# graph-mud
+# Nano Realms
 
 ## Project setup
 ```

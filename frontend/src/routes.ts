@@ -1,7 +1,7 @@
 import HomePage from './components/HomePage.vue'
 import CharacterEdit from './components/CharacterEdit.vue'
 import PlayGame from './components/PlayGame.vue'
-import { isLoggedIn } from './auth'
+import { isLoggedIn } from '@/services/auth'
 
 export const routes = [
   { path: '/', component: HomePage },

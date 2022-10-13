@@ -1,10 +1,15 @@
 import { createApp } from 'vue'
 import * as VueRouter from 'vue-router'
-import { msalInit, msalInstance } from './auth'
+import { msalInit } from '@/services/auth'
 import App from './App.vue'
 import { routes } from './routes'
 
 import './assets/shared.css'
+import { APIClient } from './services/api-client'
+
+export let api: APIClient
+export let msalInstance: any
+const SCOPES = ['User.Read']
 
 appStartup()
 
@@ -31,14 +36,19 @@ async function appStartup() {
   console.log('### API_ENDPOINT:', API_ENDPOINT)
   console.log('### AUTH_CLIENT_ID:', AUTH_CLIENT_ID)
 
-  msalInit(AUTH_CLIENT_ID)
+  msalInstance = msalInit(AUTH_CLIENT_ID)
+  api = new APIClient(API_ENDPOINT, AUTH_CLIENT_ID, SCOPES)
 
   const router = VueRouter.createRouter({
     history: VueRouter.createWebHistory(),
     routes,
   })
 
-  // api.configure(API_ENDPOINT, AUTH_CLIENT_ID, 'smilr.events')
+  const allAccts = await msalInstance.getAllAccounts()
+  if (allAccts.length > 0) {
+    console.log('### Found existing account:', allAccts[0])
+    await msalInstance.setActiveAccount(allAccts[0])
+  }
 
   const app = createApp(App)
   app.use(router)
