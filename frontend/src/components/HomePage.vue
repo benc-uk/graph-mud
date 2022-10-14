@@ -2,6 +2,10 @@
   <div id="home">
     <div class="logo">🌍 Nano Realms ⚔️</div>
 
+    <router-link to="/test" v-slot="{ href, navigate }">
+      <button :href="href" @click="navigate" class="golden-btn">TEST HARNESS</button>
+    </router-link>
+
     <button v-if="!loggedIn" @click="login" class="golden-btn">LOGIN</button>
 
     <router-link v-if="loggedIn" to="/play" v-slot="{ href, navigate }">

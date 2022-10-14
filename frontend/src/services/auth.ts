@@ -32,8 +32,8 @@ export function msalInit(clientId: string) {
         }
       },
       getAllAccounts(): AccountInfo[] {
-        const dummyAccount = localStorage.getItem('fakeAccount')
-        if (dummyAccount) return [JSON.parse(dummyAccount)]
+        const acct = localStorage.getItem('fakeAccount')
+        if (acct) return [JSON.parse(acct)]
         return []
       },
       setActiveAccount() {
@@ -67,6 +67,12 @@ export function msalInit(clientId: string) {
 
 export function isLoggedIn() {
   return msalInstance.getAllAccounts().length > 0
+}
+
+export function getUsername() {
+  const account = msalInstance.getAllAccounts()[0]
+  if (account) return account.username
+  return null
 }
 
 const fakeAccount: AccountInfo = {

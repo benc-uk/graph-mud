@@ -9,6 +9,7 @@ import { APIClient } from './services/api-client'
 
 export let api: APIClient
 export let msalInstance: any
+
 const SCOPES = ['User.Read']
 
 appStartup()

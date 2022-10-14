@@ -29,6 +29,8 @@ func main() {
 		_, _ = resp.Write([]byte(`{"p1": "hello"}`))
 	})
 
+	router.HandleFunc("/connect", wsConnect)
+
 	// add cors
 	cors := cors.New(cors.Options{
 		AllowedOrigins:   []string{"*"},
@@ -43,6 +45,8 @@ func main() {
 		WriteTimeout: 15 * time.Second,
 		ReadTimeout:  15 * time.Second,
 	}
+
+	go sender()
 
 	log.Println("### Graph MUD - backend API, listening on port:", port)
 	log.Fatal(srv.ListenAndServe())
