@@ -6,6 +6,9 @@ import (
 	"os"
 	"time"
 
+	"nano-realms-backend/api"
+	"nano-realms-backend/messaging"
+
 	"github.com/gorilla/mux"
 	"github.com/rs/cors"
 )
@@ -17,21 +20,14 @@ func main() {
 	}
 
 	router := mux.NewRouter()
-	router.HandleFunc("/health", func(resp http.ResponseWriter, req *http.Request) {
-		resp.Header().Set("Content-Type", "application/json")
-		resp.WriteHeader(http.StatusOK)
-		_, _ = resp.Write([]byte(`{"alive": true}`))
-	})
+	router.HandleFunc("/health", api.HealthEndpoint).Methods("GET")
+	router.HandleFunc("/", api.HealthEndpoint).Methods("GET")
 
-	router.HandleFunc("/players", func(resp http.ResponseWriter, req *http.Request) {
-		resp.Header().Set("Content-Type", "application/json")
-		resp.WriteHeader(http.StatusOK)
-		_, _ = resp.Write([]byte(`{"p1": "hello"}`))
-	})
+	router.HandleFunc("/connect", messaging.UserConnect)
 
-	router.HandleFunc("/connect", wsConnect)
+	router.HandleFunc("/player/{id}", api.GetPlayer).Methods("GET")
 
-	// add cors
+	// Bypass CORS
 	cors := cors.New(cors.Options{
 		AllowedOrigins:   []string{"*"},
 		AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE"},
@@ -46,7 +42,7 @@ func main() {
 		ReadTimeout:  15 * time.Second,
 	}
 
-	go sender()
+	go messaging.SenderTestLoop()
 
 	log.Println("### Graph MUD - backend API, listening on port:", port)
 	log.Fatal(srv.ListenAndServe())

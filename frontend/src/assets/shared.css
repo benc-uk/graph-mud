@@ -1,3 +1,43 @@
+@import url('https://fonts.googleapis.com/css2?family=Overpass+Mono&display=swap');
+
+.row {
+  display: flex;
+  flex-wrap: wrap;
+  flex-direction: row;
+}
+
+.col {
+  flex: 1;
+}
+
+.colflex {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+}
+
+h1 {
+  font-size: 2rem;
+  margin: 0;
+  padding: 0;
+}
+
+h2 {
+  font-size: 1.5rem;
+  margin: 0;
+  padding: 0;
+}
+
+textarea {
+  resize: none;
+  font-family: 'Overpass Mono', monospace;
+  user-select: none;
+}
+
+/*
+==============================================================================================
+*/
+
 .golden-btn + .golden-btn {
   margin-top: 1em;
 }

@@ -9,9 +9,7 @@
 
 <script lang="ts">
 import { defineComponent } from 'vue'
-
-import { WebSocketClient } from '@/services/web-sockets'
-import { ServerMessage } from '@/services/web-sockets'
+import { WebSocketClient, ServerMessage } from '@/services/websockets'
 import { api } from '@/main'
 
 export default defineComponent({

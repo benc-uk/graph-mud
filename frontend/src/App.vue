@@ -17,8 +17,17 @@ export default defineComponent({
 
 <style>
 html {
-  background-color: rgb(24, 22, 22);
+  background-color: rgb(49, 48, 47);
   color: #ddd;
   font-family: 'Trebuchet MS', 'Lucida Sans Unicode', 'Lucida Grande', 'Lucida Sans', Arial, sans-serif;
+  padding: 0;
+  margin: 0;
+  height: 100%;
+}
+main,
+body {
+  padding: 0;
+  margin: 0;
+  height: 100%;
 }
 </style>
