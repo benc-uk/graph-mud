@@ -1,49 +1,97 @@
 package main
 
 import (
+	"fmt"
 	"log"
 	"net/http"
 	"os"
 	"time"
 
-	"nano-realms-backend/api"
-	"nano-realms-backend/messaging"
+	"nano-realms/backend/game"
+	"nano-realms/backend/messaging"
+	"nano-realms/pkg/api"
+	"nano-realms/pkg/auth"
+	"nano-realms/pkg/env"
 
 	"github.com/gorilla/mux"
-	"github.com/rs/cors"
+	"github.com/neo4j/neo4j-go-driver/v4/neo4j"
+)
+
+// API type is a wrap of the common base API with local implementation
+type API struct {
+	*api.Base
+	player *game.PlayerService
+}
+
+var (
+	healthy     = true               // Simple health flag
+	version     = "0.0.1"            // App version number, set at build time with -ldflags "-X 'main.version=1.2.3'"
+	buildInfo   = "No build details" // Build details, set at build time with -ldflags "-X 'main.buildInfo=Foo bar'"
+	serviceName = "nano-realms"
+	defaultPort = 8000
 )
 
 func main() {
-	port := os.Getenv("PORT")
-	if port == "" {
-		port = "8000"
+	// Port to listen on, change the default as you see fit
+	serverPort := env.GetEnvInt("PORT", defaultPort)
+	dbHost := os.Getenv("DB_HOST")
+	if dbHost == "" {
+		dbHost = "localhost"
 	}
 
+	dbUri := fmt.Sprintf("neo4j://%s:7687", dbHost)
+	log.Printf("### 📥 Connecting to DB at %s", dbUri)
+	var err error
+	dbDriver, err := neo4j.NewDriver(dbUri, neo4j.NoAuth())
+	if err != nil {
+		log.Fatal(err)
+	}
+	err = dbDriver.VerifyConnectivity()
+	if err != nil {
+		log.Fatal(err)
+	} else {
+		log.Println("### ✅ Connected to Neo4j!")
+	}
+
+	// Wrapper API with anonymous inner new Base API
 	router := mux.NewRouter()
-	router.HandleFunc("/health", api.HealthEndpoint).Methods("GET")
-	router.HandleFunc("/", api.HealthEndpoint).Methods("GET")
+	api := API{
+		api.NewBase(serviceName, version, buildInfo, healthy, router),
+		game.NewPlayerService(dbDriver),
+	}
 
-	router.HandleFunc("/connect", messaging.UserConnect)
+	// Main REST API routes
+	api.addRoutes(router)
 
-	router.HandleFunc("/player/{id}", api.GetPlayer).Methods("GET")
+	// For websocket connections & messaging
+	messaging.Version = version
+	messaging.AddRoutes(router)
 
-	// Bypass CORS
-	cors := cors.New(cors.Options{
-		AllowedOrigins:   []string{"*"},
-		AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE"},
-		AllowedHeaders:   []string{"*"},
-		AllowCredentials: true,
-	})
+	// Extra routes for health and other features
+	api.AddStatus(router)  // Add status and information endpoint
+	api.AddLogging(router) // Add request logging
+	api.AddHealth(router)  // Add health endpoint
+	api.AddMetrics(router) // Expose metrics, in prometheus format
+	api.AddRoot(router)    // Respond to root request with a simple 200 OK
+
+	// Tell the auth middleware what scope to check when validating tokens
+	auth.AppScopeName = "Play.Game"
 
 	srv := &http.Server{
-		Handler:      cors.Handler(router),
-		Addr:         ":" + port,
-		WriteTimeout: 15 * time.Second,
-		ReadTimeout:  15 * time.Second,
+		Handler:      api.ConfigureCORSHandler(router),
+		Addr:         fmt.Sprintf(":%d", serverPort),
+		WriteTimeout: 10 * time.Second,
+		ReadTimeout:  10 * time.Second,
+		IdleTimeout:  10 * time.Second,
 	}
 
-	go messaging.SenderTestLoop()
+	_ = api.player.Create(game.NewPlayer{
+		Username:    "test@test.com",
+		Name:        "Test Guy",
+		Class:       "Wizard",
+		Description: "Hairy guy",
+	})
 
-	log.Println("### Graph MUD - backend API, listening on port:", port)
+	log.Printf("### 🌐 Nano Realms Backend API, listening on port: %d", serverPort)
 	log.Fatal(srv.ListenAndServe())
 }

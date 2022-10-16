@@ -41,3 +41,4 @@ yarn-error.log
 ### More project specific stuff ###
 bin/**
 **/dist/**
+data/**

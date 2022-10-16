@@ -2,18 +2,18 @@
   <div id="home">
     <div class="logo">🌍 Nano Realms ⚔️</div>
 
-    <router-link to="/test" v-slot="{ href, navigate }">
+    <!-- <router-link to="/test" v-slot="{ href, navigate }">
       <button :href="href" @click="navigate" class="golden-btn">TEST HARNESS</button>
-    </router-link>
+    </router-link> -->
 
     <button v-if="!loggedIn" @click="login" class="golden-btn">LOGIN</button>
 
     <router-link v-if="loggedIn" to="/play" v-slot="{ href, navigate }">
-      <button :href="href" @click="navigate" class="golden-btn">ENTER THE DUNGEON</button>
+      <button :href="href" @click="navigate" class="golden-btn">PLAY</button>
     </router-link>
     <br />
     <router-link v-if="loggedIn" to="/character" v-slot="{ href, navigate }">
-      <button :href="href" @click="navigate" class="golden-btn">EDIT CHARACTER</button>
+      <button :href="href" @click="navigate" class="golden-btn">CHARACTER</button>
     </router-link>
 
     <br />

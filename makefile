@@ -31,17 +31,13 @@ install-tools: ## 🔮 Install dev tools into project bin directory
 
 lint: ## 🔍 Lint & format check only, sets exit code on error for CI
 	@figlet $@ || true
-	@echo "Not implemented yet!"; exit 1
-	@$(GOLINT_PATH) > /dev/null || curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh
-	cd $(SRC_DIR); $(GOLINT_PATH) run --modules-download-mode=mod *.go
-	cd $(SRC_DIR); npm run lint
+	$(GOLINT_PATH) run --modules-download-mode=mod
+	cd $(FRONTEND_DIR); npm run lint
 
 lint-fix: ## 📝 Lint & format, attempts to fix errors & modify code
 	@figlet $@ || true
-	@echo "Not implemented yet!"; exit 1
-	@$(GOLINT_PATH) > /dev/null || curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh
-	cd $(SRC_DIR); golangci-lint run --modules-download-mode=mod *.go --fix
-	cd $(SPA_DIR); npm run lint-fix
+	$(GOLINT_PATH) run --modules-download-mode=mod --fix
+	cd $(FRONTEND_DIR); npm run lint-fix
 
 image: ## 📦 Build container image from Dockerfile
 	@figlet $@ || true
@@ -62,8 +58,24 @@ build: ## 🔨 Run a local build without a container
 
 run-backend: ## 🏃 Run backend with hot reload
 	@figlet $@ || true
-	cd $(BACKEND_DIR); $(AIR_PATH)
+	$(AIR_PATH)
 
 run-frontend: ## 🏃 Run frontend with hot reload
 	@figlet $@ || true
 	cd $(FRONTEND_DIR); npm run serve
+
+run-db: ## 🔁 Run Neo4J database
+	@figlet $@ || true
+	docker run -p 7474:7474 -p 7687:7687 \
+	--volume=$(REPO_DIR)/data:/data \
+	--env=NEO4J_AUTH=none neo4j
+
+clean: ## 🧹 Clean up the repo
+	@figlet $@ || true
+	rm -rf bin
+	sudo rm -rf data
+	rm -rf tmp
+
+build-world: ## 🌎 (Re)build the world database
+	@figlet $@ || true
+	@./world/build.sh

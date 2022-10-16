@@ -3,10 +3,10 @@ package messaging
 import (
 	"fmt"
 	"log"
-	"math/rand"
 	"net/http"
-	"time"
+	"os"
 
+	"github.com/gorilla/mux"
 	"github.com/gorilla/websocket"
 )
 
@@ -20,6 +20,7 @@ var upgrader = websocket.Upgrader{
 
 // Map of all connected users, by username
 var clientConnections = make(map[string]*websocket.Conn)
+var Version = "0.0.1"
 
 // GameMessage is a message sent to a user
 type GameMessage struct {
@@ -32,23 +33,27 @@ type ConnectRequest struct {
 	Username string `json:"username"`
 }
 
-func SenderTestLoop() {
-	// send message to client every 5 seconds
-	for {
-		time.Sleep(4 * time.Second)
-		for u, wsConn := range clientConnections {
-			if wsConn == nil {
-				continue
-			}
-
-			s1 := rand.NewSource(time.Now().UnixNano())
-			r1 := rand.New(s1)
-			SendToUser(u, fmt.Sprintf("Hello from server %d", r1.Int()), "server", "ping")
-		}
-	}
+func AddRoutes(router *mux.Router) {
+	router.HandleFunc("/connect", userConnect)
 }
 
-func UserConnect(resp http.ResponseWriter, req *http.Request) {
+// func SenderTestLoop() {
+// 	// send message to client every 5 seconds
+// 	for {
+// 		time.Sleep(4 * time.Second)
+// 		for u, wsConn := range clientConnections {
+// 			if wsConn == nil {
+// 				continue
+// 			}
+
+// 			s1 := rand.NewSource(time.Now().UnixNano())
+// 			r1 := rand.New(s1)
+// 			SendToUser(u, fmt.Sprintf("Hello from server %d", r1.Int()), "server", "ping")
+// 		}
+// 	}
+// }
+
+func userConnect(resp http.ResponseWriter, req *http.Request) {
 	log.Println("### Player connecting...")
 	wsConn, err := upgrader.Upgrade(resp, req, nil)
 	if err != nil {
@@ -68,7 +73,10 @@ func UserConnect(resp http.ResponseWriter, req *http.Request) {
 	// Store connection for this user
 	clientConnections[connectRequest.Username] = wsConn
 
-	SendToUser(connectRequest.Username, "OK", "server", "connection")
+	hostname, _ := os.Hostname()
+	msg := fmt.Sprintf("⚔️ Welcome to Nano Realms v%s - you are connected to server %s", Version, hostname)
+	SendToUser(connectRequest.Username, "⚔️ "+connectRequest.Username+" connected", "server", "connection")
+	SendToUser(connectRequest.Username, msg, "server", "connection")
 }
 
 // Send a message to a specific user

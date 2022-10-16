@@ -1,15 +1,14 @@
 <template>
   <div>
     <h1>Test Harness</h1>
-    <button class="golden-btn">TEST</button>
+    <button class="golden-btn" @click="test">TEST</button>
 
-    <div>{{ msg }}</div>
+    <div>{{ player }}</div>
   </div>
 </template>
 
 <script lang="ts">
 import { defineComponent } from 'vue'
-import { WebSocketClient, ServerMessage } from '@/services/websockets'
 import { api } from '@/main'
 
 export default defineComponent({
@@ -17,18 +16,18 @@ export default defineComponent({
 
   data() {
     return {
-      msg: '',
+      player: null,
     }
   },
 
-  mounted() {
-    const wsClient = new WebSocketClient(api.apiEndpoint)
-
-    wsClient.addMessageCallback((msg: ServerMessage) => {
-      console.log('got a message: ', msg)
-
-      this.msg = msg.text
-    })
+  methods: {
+    async test() {
+      try {
+        this.player = await api.getPlayer('dd')
+      } catch (err) {
+        console.log(err)
+      }
+    },
   },
 })
 </script>

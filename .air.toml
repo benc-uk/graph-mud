@@ -1,0 +1,11 @@
+root = "."
+tmp_dir = "./tmp"
+
+[build]
+  args_bin = []
+  bin = "./tmp/backend"
+  cmd = "go build -o ./tmp/backend nano-realms/backend"
+  include_dir  = ["backend", "pkg"]
+
+[misc]
+  clean_on_exit = true

@@ -1,21 +1,18 @@
 import { msalInstance } from '@/main'
 import { AuthenticationResult } from '@azure/msal-browser'
+import { getUsername } from './auth'
 
 export class APIClient {
   public apiEndpoint: string
-  public clientId: string
   public apiScopes: string[]
 
-  constructor(apiEndpoint: string, clientId: string, apiScopes: string[]) {
-    this.apiEndpoint = apiEndpoint
-    this.clientId = clientId
+  constructor(apiEndpoint: string, apiScopes: string[]) {
+    this.apiEndpoint = apiEndpoint.replace(/\/$/, '')
     this.apiScopes = apiScopes
   }
 
   async getPlayer(playerId: string) {
-    console.log('### getPlayer', playerId)
-
-    return this.baseRequest('/players')
+    return this.baseRequest('player')
   }
 
   private async baseRequest(path: string, method = 'GET', body?: any): Promise<any> {
@@ -35,6 +32,9 @@ export class APIClient {
     if (tokenRes.accessToken) {
       headers.append('Authorization', `Bearer ${tokenRes.accessToken}`)
     }
+    if (getUsername()) {
+      headers.append('X-Username', getUsername())
+    }
 
     const response = await fetch(`${this.apiEndpoint}/${path}`, {
       method,
@@ -52,8 +52,8 @@ export class APIClient {
         throw new Error(response.statusText)
       }
 
-      if (data.error !== undefined) {
-        throw new Error(data.error)
+      if (data.title !== undefined) {
+        throw new Error(`${data.title}(${data.instance}): ${data.detail}`)
       }
       throw new Error(response.statusText)
     }
