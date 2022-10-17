@@ -85,13 +85,6 @@ func main() {
 		IdleTimeout:  10 * time.Second,
 	}
 
-	_ = api.player.Create(game.NewPlayer{
-		Username:    "test@test.com",
-		Name:        "Test Guy",
-		Class:       "Wizard",
-		Description: "Hairy guy",
-	})
-
 	log.Printf("### 🌐 Nano Realms Backend API, listening on port: %d", serverPort)
 	log.Fatal(srv.ListenAndServe())
 }

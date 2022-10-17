@@ -2,30 +2,24 @@
   <div id="home">
     <div class="logo">🌍 Nano Realms ⚔️</div>
 
-    <!-- <router-link to="/test" v-slot="{ href, navigate }">
-      <button :href="href" @click="navigate" class="golden-btn">TEST HARNESS</button>
-    </router-link> -->
-
     <button v-if="!loggedIn" @click="login" class="golden-btn">LOGIN</button>
 
-    <router-link v-if="loggedIn" to="/play" v-slot="{ href, navigate }">
-      <button :href="href" @click="navigate" class="golden-btn">PLAY</button>
+    <router-link v-if="loggedIn && player" to="/play" v-slot="{ href, navigate }">
+      <button :href="href" @click="navigate" class="golden-btn mb-3">PLAY</button>
     </router-link>
-    <br />
-    <router-link v-if="loggedIn" to="/character" v-slot="{ href, navigate }">
-      <button :href="href" @click="navigate" class="golden-btn">CHARACTER</button>
+    <router-link v-if="loggedIn && !player" to="/character" v-slot="{ href, navigate }">
+      <button :href="href" @click="navigate" class="golden-btn mb-3">NEW CHARACTER</button>
     </router-link>
 
-    <br />
-    <br />
-    <br />
-    <button v-if="loggedIn" @click="logout" class="golden-btn">LOGOUT</button>
+    <button v-if="loggedIn" @click="logout" class="golden-btn mb-2">LOGOUT</button>
+
+    <button v-if="loggedIn && player" @click="deleteCharacter" class="golden-btn">DELETE CHARACTER</button>
   </div>
 </template>
 
 <script lang="ts">
 import { defineComponent } from 'vue'
-import { msalInstance } from '@/main'
+import { api, msalInstance } from '@/main'
 import { isLoggedIn } from '@/services/auth'
 
 export default defineComponent({
@@ -33,7 +27,17 @@ export default defineComponent({
 
   data: () => ({
     loggedIn: isLoggedIn(),
+    player: null,
   }),
+
+  async mounted() {
+    // check has player
+    try {
+      this.player = await api.getPlayer()
+    } catch (error) {
+      // That's ok
+    }
+  },
 
   methods: {
     async login() {
@@ -49,8 +53,13 @@ export default defineComponent({
           console.log('### Found existing account:', allAccts[0])
           await msalInstance.setActiveAccount(allAccts[0])
         }
-      } catch (e) {
-        console.error('### Error logging in:', e)
+
+        this.player = await api.getPlayer()
+      } catch (err) {
+        if (String(err).includes('Player not found')) {
+          return
+        }
+        console.error('### Error logging in:', err)
       }
     },
 
@@ -62,6 +71,11 @@ export default defineComponent({
         }
       }
       this.loggedIn = false
+    },
+
+    deleteCharacter() {
+      api.deletePlayer()
+      this.player = null
     },
   },
 })

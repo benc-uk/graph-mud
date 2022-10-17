@@ -11,8 +11,18 @@ export class APIClient {
     this.apiScopes = apiScopes
   }
 
-  async getPlayer(playerId: string) {
+  async getPlayer() {
     return this.baseRequest('player')
+  }
+
+  async createPlayer(newPlayer: any) {
+    console.log('createPlayer', newPlayer)
+
+    return this.baseRequest('player', 'POST', newPlayer)
+  }
+
+  async deletePlayer() {
+    return this.baseRequest(`player`, 'DELETE')
   }
 
   private async baseRequest(path: string, method = 'GET', body?: any): Promise<any> {
@@ -58,6 +68,11 @@ export class APIClient {
       throw new Error(response.statusText)
     }
 
-    return await response.json()
+    // Return unmarshalled object if response is JSON
+    const contentType = response.headers.get('content-type')
+    if (contentType && contentType.indexOf('application/json') !== -1) {
+      return await response.json()
+    }
+    return await response.text()
   }
 }

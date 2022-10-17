@@ -23,7 +23,7 @@ export default defineComponent({
   methods: {
     async test() {
       try {
-        this.player = await api.getPlayer('dd')
+        this.player = await api.getPlayer()
       } catch (err) {
         console.log(err)
       }

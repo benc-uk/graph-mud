@@ -1,0 +1,20 @@
+@endpoint = http://localhost:8000
+
+### Create a new player
+POST {{endpoint}}/player
+Content-Type: application/json
+x-username: joe@example.net
+
+{
+  "name": "Joe Manpuncher",
+  "class": "Barbarian",
+  "description": "Very smelly"
+}
+
+### Get a player
+GET {{endpoint}}/player
+x-username: joe@example.net
+
+### Delete a player
+DELETE {{endpoint}}/player
+x-username: joe@example.net

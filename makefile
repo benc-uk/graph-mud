@@ -76,6 +76,10 @@ clean: ## 🧹 Clean up the repo
 	sudo rm -rf data
 	rm -rf tmp
 
-build-world: ## 🌎 (Re)build the world database
+world-build: ## 🌎 (Re)build the world graph
 	@figlet $@ || true
-	@./world/build.sh
+	@./world/run-script.sh world/realm.cypher
+
+world-show: ## 📃 Dump a report of the world state
+	@figlet $@ || true
+	@./world/run-script.sh world/dump.cypher

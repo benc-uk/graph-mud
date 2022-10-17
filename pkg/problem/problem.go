@@ -37,13 +37,13 @@ func (p *Problem) Send(resp http.ResponseWriter) {
 	_ = json.NewEncoder(resp).Encode(p)
 }
 
-// New500 creates a Problem based on either a HTTP resp or an error
-func New500(typeStr string, instance string, err error) *Problem {
+// Wrap creates a Problem wrapping an error
+func Wrap(status int, typeStr string, instance string, err error) *Problem {
 	var p *Problem
 	if err != nil {
-		p = New(typeStr, MyCaller(), 500, err.Error(), instance)
+		p = New(typeStr, MyCaller(), status, err.Error(), instance)
 	} else {
-		p = New(typeStr, MyCaller(), 500, "Other error occurred", instance)
+		p = New(typeStr, MyCaller(), status, "Other error occurred", instance)
 	}
 
 	return p

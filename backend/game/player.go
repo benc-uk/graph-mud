@@ -62,18 +62,23 @@ func (s *PlayerService) Get(username string) (*Player, error) {
 	return &Player{
 		Username:    node.Props["username"].(string),
 		Name:        node.Props["name"].(string),
-		Class:       "warrior",
-		Description: "a warrior",
+		Class:       node.Props["class"].(string),
+		Description: node.Props["description"].(string),
 	}, nil
 }
 
+// Create a new player, and place them in the lobby area
+// Username must be unique
 func (s *PlayerService) Create(player NewPlayer) error {
 	sess := s.db.NewSession(neo4j.SessionConfig{AccessMode: neo4j.AccessModeWrite})
 	_, err := sess.WriteTransaction(func(tx neo4j.Transaction) (any, error) {
 		res, err := tx.Run(`
-			MATCH (lobby:Location {name: "Lobby"})
-		  MERGE (p:Player {username: $u, name: $n, class: $c, description: $d})-[:IN]->(lobby)
-		  RETURN p`,
+				MATCH (lobby:Location {name: 'lobby'})
+				MERGE (p:Player {username: $u})
+				MERGE (p)-[:IN]->(lobby)
+				ON CREATE
+					SET p.description = $d, p.class = $c, p.name = $n
+				RETURN p;`,
 			map[string]any{"u": player.Username, "n": player.Name, "c": player.Class, "d": player.Description})
 
 		if err != nil {
@@ -85,6 +90,24 @@ func (s *PlayerService) Create(player NewPlayer) error {
 		} else {
 			return nil, nil
 		}
+	})
+
+	return err
+}
+
+// Delete a player
+func (s *PlayerService) Delete(username string) error {
+	sess := s.db.NewSession(neo4j.SessionConfig{AccessMode: neo4j.AccessModeWrite})
+	_, err := sess.WriteTransaction(func(tx neo4j.Transaction) (any, error) {
+		_, err := tx.Run(`
+				MATCH (p:Player {username: $u})
+				DETACH DELETE p`,
+			map[string]any{"u": username})
+
+		if err != nil {
+			return nil, err
+		}
+		return nil, nil
 	})
 
 	return err
