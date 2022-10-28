@@ -37,22 +37,6 @@ func AddRoutes(router *mux.Router) {
 	router.HandleFunc("/connect", userConnect)
 }
 
-// func SenderTestLoop() {
-// 	// send message to client every 5 seconds
-// 	for {
-// 		time.Sleep(4 * time.Second)
-// 		for u, wsConn := range clientConnections {
-// 			if wsConn == nil {
-// 				continue
-// 			}
-
-// 			s1 := rand.NewSource(time.Now().UnixNano())
-// 			r1 := rand.New(s1)
-// 			SendToUser(u, fmt.Sprintf("Hello from server %d", r1.Int()), "server", "ping")
-// 		}
-// 	}
-// }
-
 func userConnect(resp http.ResponseWriter, req *http.Request) {
 	log.Println("### Player connecting...")
 	wsConn, err := upgrader.Upgrade(resp, req, nil)

@@ -12,11 +12,13 @@ import (
 	"errors"
 	"net/http"
 
+	"nano-realms/backend/events"
 	"nano-realms/backend/game"
 	"nano-realms/pkg/auth"
 	"nano-realms/pkg/problem"
 
 	"github.com/gorilla/mux"
+	"github.com/mitchellh/mapstructure"
 )
 
 // All routes we need should be registered here
@@ -29,15 +31,23 @@ func (api API) addRoutes(router *mux.Router) {
 // Get existing player details
 func (api API) getPlayer(resp http.ResponseWriter, req *http.Request) {
 	username := req.Header.Get("X-Username")
-	p, err := api.player.Get(username)
+
+	res, err := api.graph.QuerySingleNode("MATCH (p:Player {username: $p0}) RETURN p", []string{username})
 	if err != nil {
-		problem.Wrap(404, req.RequestURI, username, err).Send(resp)
+		problem.Wrap(500, req.RequestURI, "username", err).Send(resp)
+		return
+	}
+	if res == nil {
+		problem.Wrap(404, req.RequestURI, "username", errors.New("Player not found")).Send(resp)
 		return
 	}
 
+	player := &game.Player{}
+	_ = mapstructure.Decode(res.Props, player)
+
 	resp.Header().Set("Content-Type", "application/json")
 
-	json, _ := json.Marshal(p)
+	json, _ := json.Marshal(player)
 	_, _ = resp.Write(json)
 }
 
@@ -56,7 +66,16 @@ func (api API) newPlayer(resp http.ResponseWriter, req *http.Request) {
 	}
 	newPlayer.Username = username
 
-	err = api.player.Create(newPlayer)
+	err = api.processor.Process(events.CreateEvent{
+		Type: events.TypePlayer,
+		Props: map[string]interface{}{
+			"username":    newPlayer.Username,
+			"name":        newPlayer.Name,
+			"class":       newPlayer.Class,
+			"description": newPlayer.Description,
+		},
+	})
+
 	if err != nil {
 		problem.Wrap(500, req.RequestURI, "new", err).Send(resp)
 		return
@@ -73,11 +92,11 @@ func (api API) deletePlayer(resp http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	err := api.player.Delete(username)
-	if err != nil {
-		problem.Wrap(500, req.RequestURI, "username", err).Send(resp)
-		return
-	}
+	// err := api.player.Delete(username)
+	// if err != nil {
+	// 	problem.Wrap(500, req.RequestURI, "username", err).Send(resp)
+	// 	return
+	// }
 
 	resp.WriteHeader(http.StatusNoContent)
 }

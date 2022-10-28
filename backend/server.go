@@ -7,7 +7,8 @@ import (
 	"os"
 	"time"
 
-	"nano-realms/backend/game"
+	"nano-realms/backend/events"
+	"nano-realms/backend/graph"
 	"nano-realms/backend/messaging"
 	"nano-realms/pkg/api"
 	"nano-realms/pkg/auth"
@@ -20,7 +21,8 @@ import (
 // API type is a wrap of the common base API with local implementation
 type API struct {
 	*api.Base
-	player *game.PlayerService
+	processor *events.Processor
+	graph     *graph.GraphService
 }
 
 var (
@@ -57,8 +59,30 @@ func main() {
 	router := mux.NewRouter()
 	api := API{
 		api.NewBase(serviceName, version, buildInfo, healthy, router),
-		game.NewPlayerService(dbDriver),
+		events.NewProcessor(dbDriver),
+		graph.NewGraphService(dbDriver),
 	}
+
+	// err = api.processor.Process(events.CreateEvent{
+	// 	Type:  events.TypePlayer,
+	// 	Props: map[string]interface{}{"username": "test@test.com", "name": "test", "class": "test", "description": "test"},
+	// })
+	// if err != nil {
+	// 	log.Printf("ERROR %+v", err)
+	// }
+
+	// err = api.processor.Process(events.MoveEvent{
+	// 	NodeType:  events.TypePlayer,
+	// 	NodeProp:  "username",
+	// 	NodeValue: "test@test.com",
+	// 	DestType:  events.TypeLocation,
+	// 	DestProp:  "name",
+	// 	DestValue: "lobby",
+	// 	Relation:  "IN",
+	// })
+	// if err != nil {
+	// 	log.Printf("ERROR %+v", err)
+	// }
 
 	// Main REST API routes
 	api.addRoutes(router)

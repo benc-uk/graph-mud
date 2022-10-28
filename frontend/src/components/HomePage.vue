@@ -1,5 +1,5 @@
 <template>
-  <div id="home">
+  <div id="centerBox">
     <div class="logo">🌍 Nano Realms ⚔️</div>
 
     <button v-if="!loggedIn" @click="login" class="golden-btn">LOGIN</button>
@@ -7,27 +7,46 @@
     <router-link v-if="loggedIn && player" to="/play" v-slot="{ href, navigate }">
       <button :href="href" @click="navigate" class="golden-btn mb-3">PLAY</button>
     </router-link>
+
+    <div class="details" v-if="loggedIn && player">
+      Signed-in: {{ username }}
+      <hr />
+      <ul>
+        <li>Name: {{ player.name }}</li>
+        <li>Class: {{ player.class }}</li>
+      </ul>
+    </div>
+
     <router-link v-if="loggedIn && !player" to="/character" v-slot="{ href, navigate }">
       <button :href="href" @click="navigate" class="golden-btn mb-3">NEW CHARACTER</button>
     </router-link>
 
     <button v-if="loggedIn" @click="logout" class="golden-btn mb-2">LOGOUT</button>
 
-    <button v-if="loggedIn && player" @click="deleteCharacter" class="golden-btn">DELETE CHARACTER</button>
+    <button v-if="loggedIn && player" @click="showDeleteDialog = true" class="golden-btn">DELETE CHARACTER</button>
+
+    <div class="dialog" v-if="showDeleteDialog">
+      <h2>Delete Character</h2>
+      <p>Are you sure you want to delete your character? This can not be undone!</p>
+      <button @click="deleteCharacter" class="golden-btn">DELETE</button>
+      <button @click="showDeleteDialog = false" class="golden-btn">CANCEL</button>
+    </div>
   </div>
 </template>
 
 <script lang="ts">
 import { defineComponent } from 'vue'
 import { api, msalInstance } from '@/main'
-import { isLoggedIn } from '@/services/auth'
+import { getUsername, isLoggedIn } from '@/services/auth'
 
 export default defineComponent({
   name: 'HomePage',
 
   data: () => ({
     loggedIn: isLoggedIn(),
-    player: null,
+    username: getUsername(),
+    player: {} as any,
+    showDeleteDialog: false,
   }),
 
   async mounted() {
@@ -76,6 +95,7 @@ export default defineComponent({
     deleteCharacter() {
       api.deletePlayer()
       this.player = null
+      this.showDeleteDialog = false
     },
   },
 })
@@ -86,14 +106,6 @@ button {
   width: 300px;
 }
 
-#home {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  height: 100vh;
-}
-
 @font-face {
   font-family: gothic;
   src: url(/public/fonts/9577ba5901a597d0bf165f26338d6bd2.woff);
@@ -102,5 +114,12 @@ button {
   font-family: gothic;
   font-size: 90px;
   color: #f0d000;
+}
+
+.details {
+  background-color: rgba(0, 0, 0, 0.2);
+  padding: 1rem;
+  margin-bottom: 4rem;
+  box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.5);
 }
 </style>
