@@ -11,18 +11,22 @@
       <button class="golden-btn" @click="exit">EXIT</button>
     </div>
     <div class="colflex side">
-      <h2>🧭 Exits</h2>
-      <textarea v-model="exits" class="textBox" readonly></textarea>
-
-      <h2 class="topmargin">🗺️ Location</h2>
-      <div class="textBox">
+      <h2>🗺️ Location</h2>
+      <div class="textBox mb-3 mt-1">
         {{ location }}
       </div>
 
-      <h2 class="topmargin">💼 Inventory</h2>
-      <textarea v-model="inventory" class="textBox" readonly></textarea>
+      <h2>🧭 Exits</h2>
+      <div class="textBox mb-3 mt-1">
+        <div v-for="e in exits" :key="e">{{ e }}</div>
+      </div>
 
-      <h2 class="topmargin">🧑 Player</h2>
+      <h2>💼 Inventory</h2>
+      <div class="textBox mb-3 mt-1">
+        <div v-for="i in inventory" :key="i">{{ i }}</div>
+      </div>
+
+      <h2>🧑 Player</h2>
       <textarea v-model="player" class="textBox" readonly></textarea>
     </div>
   </div>
@@ -40,25 +44,23 @@ export default defineComponent({
     return {
       cmd: '',
       msgLog: [] as ServerMessage[],
-      exits: 'North\nSouth',
+      exits: Array<string>(),
       location: '',
       player: '',
-      inventory: 'A Sword\nA Shield',
+      inventory: Array<string>(),
     }
   },
 
   async mounted() {
     const wsClient = new WebSocketClient(api.apiEndpoint)
 
-    wsClient.addMessageCallback(this.readMessage)
+    wsClient.addMessageCallback(this.handleMessage)
 
     const p = await api.getPlayer()
     this.player = `You are ${p.name} a ${p.description} ${p.class}`
 
     await api.cmd('look')
-
-    const pl = await api.playerLocation()
-    this.location = pl.description
+    await this.update()
 
     let cmdInput: HTMLInputElement = this.$refs.cmdInput as HTMLInputElement
     cmdInput.focus()
@@ -69,8 +71,8 @@ export default defineComponent({
       this.$router.push('/')
     },
 
-    readMessage(msg: ServerMessage) {
-      console.debug(msg)
+    handleMessage(msg: ServerMessage) {
+      console.debug(JSON.stringify(msg))
 
       this.msgLog.push(msg)
 
@@ -78,20 +80,40 @@ export default defineComponent({
       if (textarea) {
         textarea.scrollTop = textarea.scrollHeight
       }
+
+      if (msg.type === 'move') {
+        this.update()
+      }
     },
 
     async submitCmd() {
-      try {
-        this.msgLog.push({ source: 'local', type: 'command', text: this.cmd, timestamp: new Date() })
+      if (this.cmd === 'clear') {
+        this.cmd = ''
+        this.msgLog = []
+        return
+      }
 
+      try {
+        // Echo locally
+        this.msgLog.push({ source: 'local', type: 'command', text: this.cmd, timestamp: new Date() })
         // Actually send the command to the server
         await api.cmd(this.cmd)
-
-        this.cmd = ''
       } catch (err) {
+        // Push the error to the message log
         this.msgLog.push({ source: 'server', type: 'error', text: `${err}`, timestamp: new Date() })
         console.error(err)
       }
+
+      this.cmd = ''
+    },
+
+    async update() {
+      const loc = await api.playerLocation()
+      this.location = loc.description
+      this.exits = loc.exits
+      this.inventory = []
+      this.inventory.push('Some cheese')
+      this.inventory.push('A sword')
     },
   },
 })
@@ -128,9 +150,6 @@ export default defineComponent({
   -webkit-box-sizing: border-box;
   box-sizing: border-box;
 }
-.topmargin {
-  margin-top: 0.9rem;
-}
 .row {
   height: 100vh;
 }
@@ -143,6 +162,7 @@ export default defineComponent({
 
 .msgLog {
   height: 80vh;
+  overflow-y: scroll;
 }
 
 .textBox {
@@ -152,7 +172,6 @@ export default defineComponent({
   border: 2px solid #0b6670;
   border-radius: 0.4rem;
   padding: 0.5rem;
-  margin: 0.2rem;
   box-shadow: inset 0px 0px 14px 4px #013a0f;
   font-family: 'Overpass Mono', monospace;
 }

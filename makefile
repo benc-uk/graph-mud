@@ -1,15 +1,14 @@
 # Common variables
 VERSION := 0.0.1
-BUILD_INFO := Manual build 
+BUILD_INFO := Manual build
 FRONTEND_DIR := ./frontend
 FRONTEND_HOST_DIR := ./frontend-host
 BACKEND_DIR := ./backend
 
 # Most likely want to override these when calling `make image`
 IMAGE_REG ?= ghcr.io
-IMAGE_REPO ?= benc-uk/nano-realms
+IMAGE_NAME ?= benc-uk/nano-realms
 IMAGE_TAG ?= latest
-IMAGE_PREFIX := $(IMAGE_REG)/$(IMAGE_REPO)
 
 # Things you don't want to change
 REPO_DIR := $(abspath $(dir $(lastword $(MAKEFILE_LIST))))
@@ -39,22 +38,25 @@ lint-fix: ## 📝 Lint & format, attempts to fix errors & modify code
 	$(GOLINT_PATH) run --modules-download-mode=mod --fix
 	cd $(FRONTEND_DIR); npm run lint-fix
 
-image: ## 📦 Build container image from Dockerfile
+images: ## 📦 Build container images for all components
 	@figlet $@ || true
-	docker build --file ./build/Dockerfile \
+	docker build --file ./build/Dockerfile.backend \
 	--build-arg BUILD_INFO="$(BUILD_INFO)" \
 	--build-arg VERSION="$(VERSION)" \
-	--tag $(IMAGE_PREFIX):$(IMAGE_TAG) . 
+	--tag $(IMAGE_REG)/$(IMAGE_NAME)-backend:$(IMAGE_TAG) . 
 
 push: ## 📤 Push container image to registry
 	@figlet $@ || true
-	docker push $(IMAGE_PREFIX):$(IMAGE_TAG)
+	docker push $(IMAGE_REG)/$(IMAGE_NAME)-backend:$(IMAGE_TAG)
+	docker push $(IMAGE_REG)/$(IMAGE_NAME)-frontend:$(IMAGE_TAG)
 
 build: ## 🔨 Run a local build without a container
 	@figlet $@ || true
-	@echo "Not implemented yet!"
-	#go build -o __CHANGE_ME__ $(SRC_DIR)/...
-	#cd $(SRC_DIR); npm run build
+	go build -o bin/backend \
+	  -ldflags "-X main.version=$(VERSION) -X 'main.buildInfo=$(BUILD_INFO)'" \
+	  nano-realms/backend 
+	go build -o bin/frontend-host nano-realms/frontend-host
+	cd $(FRONTEND_DIR); npm run build
 
 run-backend: ## 🏃 Run backend with hot reload
 	@figlet $@ || true

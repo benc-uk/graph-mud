@@ -20,9 +20,9 @@ async function appStartup() {
   let API_ENDPOINT = process.env.VUE_APP_API_ENDPOINT || '/'
   let AUTH_CLIENT_ID = process.env.VUE_APP_AAD_CLIENT_ID || ''
 
-  // Load config at runtime from special `/.config` endpoint on frontend-host
+  // Load config at runtime from special `.config` endpoint on frontend-host
   try {
-    const configResp = await fetch('.config/API_ENDPOINT,AAD_CLIENT_ID')
+    const configResp = await fetch('.config')
     if (configResp.ok) {
       const config = await configResp.json()
       API_ENDPOINT = config.API_ENDPOINT
@@ -30,7 +30,7 @@ async function appStartup() {
       console.log('### Config loaded:', config)
     }
   } catch (err) {
-    console.warn("### Failed to fetch '/.config' endpoint. Defaults will be used")
+    console.warn("### The '.config' endpoint is missing. Defaults will be used")
   }
   console.log('### API_ENDPOINT:', API_ENDPOINT)
   console.log('### AUTH_CLIENT_ID:', AUTH_CLIENT_ID)

@@ -59,6 +59,41 @@ func (s *GraphService) QuerySingleNode(query string, paramArray []string) (*neo4
 	return &node, err
 }
 
+func (s *GraphService) QueryMultiNode(query string, paramArray []string) ([]neo4j.Node, error) {
+	params := make(map[string]interface{})
+	for i, p := range paramArray {
+		params[fmt.Sprintf("p%d", i)] = p
+	}
+
+	sess := s.db.NewSession(neo4j.SessionConfig{AccessMode: neo4j.AccessModeWrite})
+	val, err := sess.ReadTransaction(func(tx neo4j.Transaction) (any, error) {
+		res, err := tx.Run(query, params)
+
+		if err != nil {
+			return nil, err
+		}
+
+		var nodes []neo4j.Node
+
+		for res.Next() {
+			node := res.Record().Values[0].(neo4j.Node)
+			nodes = append(nodes, node)
+		}
+		return nodes, nil
+	})
+
+	if err != nil {
+		return nil, err
+	}
+
+	if val == nil {
+		return nil, nil
+	}
+
+	out := val.([]neo4j.Node)
+	return out, err
+}
+
 func (s *GraphService) QueryMultiRelationship(query string, paramArray []string) ([]neo4j.Relationship, error) {
 	params := make(map[string]interface{})
 	for i, p := range paramArray {
@@ -97,4 +132,19 @@ func (s *GraphService) QueryMultiRelationship(query string, paramArray []string)
 func (s *GraphService) GetSingleNodeById(id int64) (*neo4j.Node, error) {
 	query := fmt.Sprintf("MATCH (n) WHERE ID(n) = %d RETURN n", id)
 	return s.QuerySingleNode(query, []string{})
+}
+
+func (s *GraphService) GetPlayerLocation(username string) (*neo4j.Node, error) {
+	query := "MATCH (p:Player {username: $p0})-[:IN]->(l:Location) RETURN l"
+	return s.QuerySingleNode(query, []string{username})
+}
+
+func (s *GraphService) GetPlayersInLocation(locationName string) ([]neo4j.Node, error) {
+	query := "MATCH (p:Player)-[:IN]->(l:Location {name: $p0}) RETURN p"
+	return s.QueryMultiNode(query, []string{locationName})
+}
+
+func (s *GraphService) GetPlayer(username string) (*neo4j.Node, error) {
+	query := "MATCH (p:Player {username: $p0}) RETURN p"
+	return s.QuerySingleNode(query, []string{username})
 }

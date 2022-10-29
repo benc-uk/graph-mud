@@ -94,14 +94,7 @@ func main() {
 		IdleTimeout:  10 * time.Second,
 	}
 
-	// TEST CODE
-	rels, err := api.graph.QueryMultiRelationship(`MATCH (:Player {username:$p0})-[:IN]->(l:Location) MATCH (l)-[r]->(:Location) RETURN r`, []string{"becolem@microsoft.com"})
-
-	if err != nil {
-		log.Fatal(err)
-	}
-	log.Printf("### 📥 Relationships: %+v", rels)
-
 	log.Printf("### 🌐 Nano Realms Backend API, listening on port: %d", serverPort)
+	log.Printf("### 🚀 Build details: v%s (%s)", version, buildInfo)
 	log.Fatal(srv.ListenAndServe())
 }

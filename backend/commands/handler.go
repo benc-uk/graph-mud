@@ -29,7 +29,7 @@ func (h *Handler) Handle(username string, cmd string) error {
 	cParts := strings.Split(c, " ")
 
 	if slices.Contains([]string{"look", "where", "l"}, cParts[0]) {
-		res, err := h.graph.QuerySingleNode("MATCH (p:Player {username:$p0})-[IN]->(l:Location) RETURN l", []string{username})
+		res, err := h.graph.GetPlayerLocation(username)
 		if err != nil {
 			return err
 		}

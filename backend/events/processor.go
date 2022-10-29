@@ -21,33 +21,70 @@ func NewProcessor(dbDriver neo4j.Driver, graph *graph.GraphService) *Processor {
 }
 
 func (p *Processor) Process(event any) error {
-	ce, ok := event.(CreateEvent)
-	if ok {
+	ce, isCreateEvent := event.(CreateEvent)
+	if isCreateEvent {
 		return p.createNode(ce)
 	}
 
-	me, ok := event.(MoveEvent)
-	if ok {
+	if me, isMoveEvent := event.(MoveEvent); isMoveEvent {
+		username := me.NodeValue.(string)
+		playerRes, err := p.graph.GetPlayer(username)
+		if err != nil {
+			return err
+		}
+		moverName := playerRes.Props["name"].(string)
 
-		err := p.moveNode(me)
+		// Send messages
+		if me.NodeType == TypePlayer {
+			locationRes, err := p.graph.GetPlayerLocation(username)
+			if err != nil {
+				return err
+			}
+
+			// Send message to other players on entry to new location
+			players, err := p.graph.GetPlayersInLocation(locationRes.Props["name"].(string))
+			if err != nil {
+				return err
+			}
+
+			for _, player := range players {
+				if u := player.Props["username"].(string); u != username {
+					messaging.SendToUser(u, moverName+" leaves", "server", "player_enter")
+				}
+			}
+		}
+
+		// Update the graph database
+		err = p.moveNode(me)
 		if err != nil {
 			return err
 		}
 
+		// Send messages
 		if me.NodeType == TypePlayer {
-			username := me.NodeValue.(string)
-			res, err := p.graph.QuerySingleNode("MATCH (p:Player {username:$p0})-[IN]->(l:Location) RETURN l", []string{username})
+			locationRes, err := p.graph.GetPlayerLocation(username)
 			if err != nil {
 				return err
 			}
-			locDesc := res.Props["description"].(string)
-
+			locDesc := locationRes.Props["description"].(string)
 			messaging.SendToUser(username, "You move into: "+locDesc, "server", "move")
+
+			// Send message to other players on entry to new location
+			players, err := p.graph.GetPlayersInLocation(locationRes.Props["name"].(string))
+			if err != nil {
+				return err
+			}
+
+			for _, player := range players {
+				if u := player.Props["username"].(string); u != username {
+					messaging.SendToUser(u, moverName+" enters", "server", "player_enter")
+				}
+			}
 		}
 	}
 
-	de, ok := event.(DestroyEvent)
-	if ok {
+	de, isDestroyEvent := event.(DestroyEvent)
+	if isDestroyEvent {
 		return p.deleteNode(de)
 	}
 

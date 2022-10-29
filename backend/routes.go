@@ -20,14 +20,22 @@ import (
 
 	"github.com/gorilla/mux"
 	"github.com/mitchellh/mapstructure"
+	"golang.org/x/text/cases"
+	"golang.org/x/text/language"
 )
+
+type LocationResp struct {
+	Description string   `json:"description"`
+	Name        string   `json:"name"`
+	Exits       []string `json:"exits"`
+}
 
 // All routes we need should be registered here
 func (api API) addRoutes(router *mux.Router) {
 	router.HandleFunc("/player", auth.JWTValidator(api.getPlayer)).Methods("GET")
 	router.HandleFunc("/player", auth.JWTValidator(api.newPlayer)).Methods("POST")
 	router.HandleFunc("/player", auth.JWTValidator(api.deletePlayer)).Methods("DELETE")
-	router.HandleFunc("/cmd", auth.JWTValidator(api.playerCommand)).Methods("POST")
+	router.HandleFunc("/cmd", auth.JWTValidator(api.executeCommand)).Methods("POST")
 	router.HandleFunc("/player/location", auth.JWTValidator(api.playerLocation)).Methods("GET")
 }
 
@@ -131,7 +139,7 @@ func (api API) deletePlayer(resp http.ResponseWriter, req *http.Request) {
 	resp.WriteHeader(http.StatusNoContent)
 }
 
-func (api API) playerCommand(resp http.ResponseWriter, req *http.Request) {
+func (api API) executeCommand(resp http.ResponseWriter, req *http.Request) {
 	var cmd game.Command
 	username := req.Header.Get("X-Username")
 	if username == "" {
@@ -162,13 +170,30 @@ func (api API) playerLocation(resp http.ResponseWriter, req *http.Request) {
 		problem.Wrap(400, req.RequestURI, "username", errors.New("Missing username header")).Send(resp)
 		return
 	}
-	res, err := api.graph.QuerySingleNode("MATCH (p:Player {username:$p0})-[IN]->(l:Location) RETURN l", []string{username})
+	res, err := api.graph.GetPlayerLocation(username)
 	if err != nil {
 		problem.Wrap(500, req.RequestURI, "username", err).Send(resp)
 		return
 	}
 
+	exits, err := api.graph.QueryMultiRelationship(`MATCH (:Player {username:$p0})-[:IN]->(l:Location) MATCH (l)-[r]->(:Location) RETURN r`, []string{username})
+	if err != nil {
+		problem.Wrap(500, req.RequestURI, "username", err).Send(resp)
+		return
+	}
+
+	locationResp := &LocationResp{
+		Description: res.Props["description"].(string),
+		Name:        res.Props["name"].(string),
+		Exits:       make([]string, 0),
+	}
+
+	caser := cases.Title(language.English)
+	for _, e := range exits {
+		locationResp.Exits = append(locationResp.Exits, caser.String(e.Type))
+	}
+
 	resp.Header().Set("Content-Type", "application/json")
-	json, _ := json.Marshal(res.Props)
+	json, _ := json.Marshal(locationResp)
 	_, _ = resp.Write(json)
 }

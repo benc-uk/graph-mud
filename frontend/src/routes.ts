@@ -5,7 +5,6 @@ import { isLoggedIn } from '@/services/auth'
 
 export const routes = [
   { path: '/', component: HomePage },
-
   { path: '/home', component: HomePage },
 
   {

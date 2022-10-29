@@ -12,6 +12,7 @@ export interface LocationInfo {
   name: string
   description: string
   gameEntry: boolean
+  exits: string[]
 }
 
 export class APIClient {

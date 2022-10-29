@@ -13,6 +13,8 @@ require (
 	github.com/neo4j/neo4j-go-driver/v4 v4.4.4
 	github.com/prometheus/client_golang v1.13.0
 	github.com/rs/cors v1.8.2
+	golang.org/x/exp v0.0.0-20221028150844-83b7d23a625f
+	golang.org/x/text v0.3.7
 )
 
 require (
@@ -28,7 +30,6 @@ require (
 	github.com/prometheus/common v0.37.0 // indirect
 	github.com/prometheus/procfs v0.8.0 // indirect
 	github.com/stretchr/testify v1.8.0 // indirect
-	golang.org/x/exp v0.0.0-20221028150844-83b7d23a625f // indirect
 	golang.org/x/sys v0.1.0 // indirect
 	google.golang.org/protobuf v1.28.1 // indirect
 	howett.net/plist v0.0.0-20181124034731-591f970eefbb // indirect
