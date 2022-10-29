@@ -12,7 +12,8 @@
 // MATCH (p:Player)
 // RETURN p;
 
-MATCH (l:Player) RETURN l;
+// MATCH (:Player {username:'becolem@microsoft.com'})-[:IN]->(l:Location)
+// MATCH (l)-[v]->(e:Location)
+// RETURN v,e
 
-// MATCH (p:Player)-->(l:Location)
-// RETURN p, l;
+MATCH (:Player {username:'becolem@microsoft.com'})-[:IN]->(l:Location) MATCH (l)-[r]->(:Location) RETURN r

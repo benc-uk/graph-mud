@@ -2,33 +2,55 @@ package events
 
 import (
 	"fmt"
-
+	"nano-realms/backend/graph"
 	"nano-realms/backend/messaging"
 
 	"github.com/neo4j/neo4j-go-driver/v4/neo4j"
 )
 
 type Processor struct {
-	db neo4j.Driver
+	db    neo4j.Driver
+	graph *graph.GraphService
 }
 
-func NewProcessor(dbDriver neo4j.Driver) *Processor {
+func NewProcessor(dbDriver neo4j.Driver, graph *graph.GraphService) *Processor {
 	return &Processor{
-		db: dbDriver,
+		db:    dbDriver,
+		graph: graph,
 	}
 }
 
 func (p *Processor) Process(event any) error {
-	// check  event is CreateEvent
 	ce, ok := event.(CreateEvent)
 	if ok {
 		return p.createNode(ce)
 	}
+
 	me, ok := event.(MoveEvent)
 	if ok {
-		messaging.SendToUser("oooooooooooooo", "You have moved to the"+me.DestValue, "system", "system")
-		return p.moveNode(me)
+
+		err := p.moveNode(me)
+		if err != nil {
+			return err
+		}
+
+		if me.NodeType == TypePlayer {
+			username := me.NodeValue.(string)
+			res, err := p.graph.QuerySingleNode("MATCH (p:Player {username:$p0})-[IN]->(l:Location) RETURN l", []string{username})
+			if err != nil {
+				return err
+			}
+			locDesc := res.Props["description"].(string)
+
+			messaging.SendToUser(username, "You move into: "+locDesc, "server", "move")
+		}
 	}
+
+	de, ok := event.(DestroyEvent)
+	if ok {
+		return p.deleteNode(de)
+	}
+
 	return nil
 }
 
@@ -70,6 +92,29 @@ func (p *Processor) moveNode(e MoveEvent) error {
 	return err
 }
 
-func (event *CreateEvent) Notify() error {
-	return nil
+func (p *Processor) deleteNode(e DestroyEvent) error {
+	sess := p.db.NewSession(neo4j.SessionConfig{AccessMode: neo4j.AccessModeWrite})
+	_, err := sess.WriteTransaction(func(tx neo4j.Transaction) (any, error) {
+		query := fmt.Sprintf("MATCH (n:%s {%s: $v}) DETACH DELETE n", e.NodeType, e.Prop)
+		_, err := tx.Run(query, map[string]any{"v": e.Value})
+
+		if err != nil {
+			return nil, err
+		}
+		return nil, nil
+	})
+
+	return err
+}
+
+func MovePlayerEvent(username, dest string) MoveEvent {
+	return MoveEvent{
+		NodeType:  TypePlayer,
+		NodeProp:  "username",
+		NodeValue: username,
+		DestType:  TypeLocation,
+		DestProp:  "name",
+		DestValue: dest,
+		Relation:  RelIn,
+	}
 }

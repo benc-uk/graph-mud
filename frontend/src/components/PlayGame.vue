@@ -1,23 +1,29 @@
 <template>
-  <div class="row">
+  <div class="row" style="overflow: hidden">
     <div class="colflex main">
-      <input class="cmd fullwidth" type="text" spellcheck="false" />
-      <textarea v-model="msgLog" class="mywidth" readonly></textarea>
+      <input ref="cmdInput" v-model="cmd" class="cmd fullwidth" type="text" spellcheck="false" @keyup.enter="submitCmd" />
+
+      <div class="textBox msgLog">
+        <div v-for="m in msgLog" :key="`${m.timestamp}+${m.type}`" class="message" :class="`${m.source}-${m.type}`">{{ m.text }}</div>
+      </div>
+
       <br />
       <button class="golden-btn" @click="exit">EXIT</button>
     </div>
     <div class="colflex side">
       <h2>🧭 Exits</h2>
-      <textarea v-model="exits" class="mywidth" readonly></textarea>
+      <textarea v-model="exits" class="textBox" readonly></textarea>
 
       <h2 class="topmargin">🗺️ Location</h2>
-      <textarea v-model="location" class="mywidth" readonly></textarea>
+      <div class="textBox">
+        {{ location }}
+      </div>
 
       <h2 class="topmargin">💼 Inventory</h2>
-      <textarea v-model="inventory" class="mywidth" readonly></textarea>
+      <textarea v-model="inventory" class="textBox" readonly></textarea>
 
       <h2 class="topmargin">🧑 Player</h2>
-      <textarea v-model="player" class="mywidth" readonly></textarea>
+      <textarea v-model="player" class="textBox" readonly></textarea>
     </div>
   </div>
 </template>
@@ -32,18 +38,30 @@ export default defineComponent({
 
   data() {
     return {
-      msgLog: '',
+      cmd: '',
+      msgLog: [] as ServerMessage[],
       exits: 'North\nSouth',
-      location: 'A Dark Room',
-      player: 'You are a grubby, worrisome mage',
+      location: '',
+      player: '',
       inventory: 'A Sword\nA Shield',
     }
   },
 
-  mounted() {
+  async mounted() {
     const wsClient = new WebSocketClient(api.apiEndpoint)
 
     wsClient.addMessageCallback(this.readMessage)
+
+    const p = await api.getPlayer()
+    this.player = `You are ${p.name} a ${p.description} ${p.class}`
+
+    await api.cmd('look')
+
+    const pl = await api.playerLocation()
+    this.location = pl.description
+
+    let cmdInput: HTMLInputElement = this.$refs.cmdInput as HTMLInputElement
+    cmdInput.focus()
   },
 
   methods: {
@@ -52,13 +70,27 @@ export default defineComponent({
     },
 
     readMessage(msg: ServerMessage) {
-      console.log('got a message: ', msg)
+      console.debug(msg)
 
-      this.msgLog += msg.text + '\n'
+      this.msgLog.push(msg)
 
       const textarea = document.querySelector('textarea')
       if (textarea) {
         textarea.scrollTop = textarea.scrollHeight
+      }
+    },
+
+    async submitCmd() {
+      try {
+        this.msgLog.push({ source: 'local', type: 'command', text: this.cmd, timestamp: new Date() })
+
+        // Actually send the command to the server
+        await api.cmd(this.cmd)
+
+        this.cmd = ''
+      } catch (err) {
+        this.msgLog.push({ source: 'server', type: 'error', text: `${err}`, timestamp: new Date() })
+        console.error(err)
       }
     },
   },
@@ -71,11 +103,12 @@ export default defineComponent({
   color: #ddd;
   font-size: 18px;
   border: 2px solid #109abd;
-  border-radius: 0.8rem;
+  border-radius: 0.6rem;
   padding: 0.7rem;
   margin-bottom: 0.2rem;
   caret-color: rgb(8, 172, 95);
   box-shadow: inset 0px 0px 14px 9px #013a0f;
+  font-family: 'Overpass Mono', monospace;
 }
 .cmd::spelling-error {
   background-color: rgb(179, 197, 17);
@@ -105,22 +138,53 @@ export default defineComponent({
   padding: 1rem;
   background-color: rgb(31, 31, 31);
   box-shadow: inset 0 0 15px rgb(0, 0, 0);
+  height: 100vh;
 }
 
-textarea {
+.msgLog {
+  height: 80vh;
+}
+
+.textBox {
   background-color: rgb(15, 15, 15);
   color: #fff;
   font-size: 1.2rem;
   border: 2px solid #0b6670;
-  border-radius: 0.8rem;
-  height: 100%;
-  padding: 0.3rem;
-  margin: 0.15rem;
-  cursor: no-drop;
+  border-radius: 0.4rem;
+  padding: 0.5rem;
+  margin: 0.2rem;
   box-shadow: inset 0px 0px 14px 4px #013a0f;
+  font-family: 'Overpass Mono', monospace;
 }
 
-textarea:focus {
+.textBox:focus {
   outline: none;
+}
+
+.message {
+  padding-top: 2px;
+  padding-bottom: 2px;
+}
+
+.look,
+.server-move,
+.command-look {
+  color: rgb(148, 213, 233);
+}
+.server-connection {
+  color: rgb(101, 209, 101);
+}
+
+.command-invalid {
+  color: rgb(219, 195, 60);
+}
+
+.command-blocked {
+  color: rgb(228, 104, 47);
+}
+
+.server-error {
+  color: rgb(235, 25, 154);
+  font-weight: 700;
 }
 </style>

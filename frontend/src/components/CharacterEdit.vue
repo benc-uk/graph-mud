@@ -19,7 +19,7 @@
     <br />
 
     <div class="row">
-      <button @click="save" class="golden-btn">CREATE</button>&nbsp;&nbsp;
+      <button @click="save" class="golden-btn mr-2" v-show="formComplete">CREATE</button>
       <button @click="cancel" class="golden-btn">CANCEL</button>
     </div>
   </div>
@@ -31,6 +31,12 @@ import { defineComponent } from 'vue'
 
 export default defineComponent({
   name: 'CharacterEdit',
+
+  computed: {
+    formComplete() {
+      return this.name.trim() != '' && this.description1 != '' && this.description2 != '' && this.className != ''
+    },
+  },
 
   data: () => ({
     name: '',
@@ -126,7 +132,7 @@ export default defineComponent({
     async save() {
       try {
         await api.createPlayer({
-          name: this.name,
+          name: this.name.trim(),
           class: this.className,
           description: `${this.description1} ${this.description2}`,
         })

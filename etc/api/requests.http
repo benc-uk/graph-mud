@@ -1,6 +1,5 @@
 @endpoint = http://localhost:8000
-@username = test@test.com
-#becolem@microsoft.com
+@username = becolem@microsoft.com
 
 ### Create a new player
 POST {{endpoint}}/player
@@ -20,3 +19,15 @@ x-username: {{ username }}
 ### Delete a player
 DELETE {{endpoint}}/player
 x-username: {{ username }}
+
+### Get player location
+GET {{endpoint}}/player/location
+x-username: {{ username }}
+
+### Send command
+POST {{endpoint}}/cmd
+x-username: {{ username }}
+
+{
+  "text": "look"
+}

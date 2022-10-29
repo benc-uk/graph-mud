@@ -3,6 +3,8 @@ import { getUsername } from './auth'
 export interface ServerMessage {
   source: string
   text: string
+  type: string
+  timestamp: Date
 }
 
 export class WebSocketClient {

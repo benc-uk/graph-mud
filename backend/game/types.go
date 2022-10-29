@@ -8,8 +8,12 @@ type NewPlayer struct {
 }
 
 type Player struct {
-	Username    string `mapstructure:"username"`
-	Name        string `mapstructure:"name"`
-	Class       string `mapstructure:"class"`
-	Description string `mapstructure:"description"`
+	Username    string `mapstructure:"username" json:"username"`
+	Name        string `mapstructure:"name" json:"name"`
+	Class       string `mapstructure:"class" json:"class"`
+	Description string `mapstructure:"description" json:"description"`
+}
+
+type Command struct {
+	Text string
 }

@@ -38,6 +38,7 @@
 import { defineComponent } from 'vue'
 import { api, msalInstance } from '@/main'
 import { getUsername, isLoggedIn } from '@/services/auth'
+import { PlayerInfo } from '@/services/api-client'
 
 export default defineComponent({
   name: 'HomePage',
@@ -45,14 +46,16 @@ export default defineComponent({
   data: () => ({
     loggedIn: isLoggedIn(),
     username: getUsername(),
-    player: {} as any,
+    player: null as PlayerInfo | null,
     showDeleteDialog: false,
   }),
 
   async mounted() {
-    // check has player
+    // check user has a player in the world
     try {
-      this.player = await api.getPlayer()
+      if (isLoggedIn()) {
+        this.player = await api.getPlayer()
+      }
     } catch (error) {
       // That's ok
     }

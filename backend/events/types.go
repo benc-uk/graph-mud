@@ -8,13 +8,19 @@ type CreateEvent struct {
 type MoveEvent struct {
 	NodeType  NodeType
 	NodeProp  string
-	NodeValue string
+	NodeValue any
 
 	DestType  NodeType
 	DestProp  string
-	DestValue string
+	DestValue any
 
 	Relation Relationship
+}
+
+type DestroyEvent struct {
+	NodeType NodeType
+	Prop     string
+	Value    any
 }
 
 type NodeType string

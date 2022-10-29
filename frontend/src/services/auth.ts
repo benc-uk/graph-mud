@@ -1,6 +1,8 @@
 import { PublicClientApplication, LogLevel, AccountInfo, AuthenticationResult } from '@azure/msal-browser'
 import { msalInstance } from '@/main'
 
+const LOG_LEVEL = LogLevel.Warning
+
 // Config object to be passed to Msal on creation
 export function msalInit(clientId: string) {
   // If we have no clientId, we pretend we have an instance and mock it
@@ -56,7 +58,7 @@ export function msalInit(clientId: string) {
         loggerCallback: (level: LogLevel, message: string) => {
           console.log(`🔑 (${level}): ${message}`)
         },
-        logLevel: LogLevel.Info,
+        logLevel: LOG_LEVEL,
       },
     },
   }

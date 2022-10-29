@@ -5,6 +5,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"time"
 
 	"github.com/gorilla/mux"
 	"github.com/gorilla/websocket"
@@ -24,9 +25,11 @@ var Version = "0.0.1"
 
 // GameMessage is a message sent to a user
 type GameMessage struct {
-	Source string `json:"source"`
-	Text   string `json:"text"`
-	Type   string `json:"type"`
+	Source    string    `json:"source"`
+	Text      string    `json:"text"`
+	Type      string    `json:"type"`
+	Value     string    `json:"value"`
+	TimeStamp time.Time `json:"timestamp"`
 }
 
 type ConnectRequest struct {
@@ -70,10 +73,13 @@ func SendToUser(username string, message string, source string, typeStr string) 
 		return
 	}
 
+	log.Printf("### Sending message to user '%s': %s", username, message)
+
 	err := conn.WriteJSON(GameMessage{
-		Source: source,
-		Type:   typeStr,
-		Text:   message,
+		Source:    source,
+		Type:      typeStr,
+		Text:      message,
+		TimeStamp: time.Now(),
 	})
 
 	if err != nil {

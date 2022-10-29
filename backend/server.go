@@ -7,6 +7,7 @@ import (
 	"os"
 	"time"
 
+	"nano-realms/backend/commands"
 	"nano-realms/backend/events"
 	"nano-realms/backend/graph"
 	"nano-realms/backend/messaging"
@@ -21,8 +22,9 @@ import (
 // API type is a wrap of the common base API with local implementation
 type API struct {
 	*api.Base
-	processor *events.Processor
-	graph     *graph.GraphService
+	event   *events.Processor
+	graph   *graph.GraphService
+	command *commands.Handler
 }
 
 var (
@@ -57,32 +59,15 @@ func main() {
 
 	// Wrapper API with anonymous inner new Base API
 	router := mux.NewRouter()
+
+	graphService := graph.NewGraphService(dbDriver)
+	eventProcessor := events.NewProcessor(dbDriver, graphService)
 	api := API{
 		api.NewBase(serviceName, version, buildInfo, healthy, router),
-		events.NewProcessor(dbDriver),
-		graph.NewGraphService(dbDriver),
+		eventProcessor,
+		graphService,
+		commands.NewHandler(graphService, eventProcessor),
 	}
-
-	// err = api.processor.Process(events.CreateEvent{
-	// 	Type:  events.TypePlayer,
-	// 	Props: map[string]interface{}{"username": "test@test.com", "name": "test", "class": "test", "description": "test"},
-	// })
-	// if err != nil {
-	// 	log.Printf("ERROR %+v", err)
-	// }
-
-	// err = api.processor.Process(events.MoveEvent{
-	// 	NodeType:  events.TypePlayer,
-	// 	NodeProp:  "username",
-	// 	NodeValue: "test@test.com",
-	// 	DestType:  events.TypeLocation,
-	// 	DestProp:  "name",
-	// 	DestValue: "lobby",
-	// 	Relation:  "IN",
-	// })
-	// if err != nil {
-	// 	log.Printf("ERROR %+v", err)
-	// }
 
 	// Main REST API routes
 	api.addRoutes(router)
@@ -108,6 +93,14 @@ func main() {
 		ReadTimeout:  10 * time.Second,
 		IdleTimeout:  10 * time.Second,
 	}
+
+	// TEST CODE
+	rels, err := api.graph.QueryMultiRelationship(`MATCH (:Player {username:$p0})-[:IN]->(l:Location) MATCH (l)-[r]->(:Location) RETURN r`, []string{"becolem@microsoft.com"})
+
+	if err != nil {
+		log.Fatal(err)
+	}
+	log.Printf("### 📥 Relationships: %+v", rels)
 
 	log.Printf("### 🌐 Nano Realms Backend API, listening on port: %d", serverPort)
 	log.Fatal(srv.ListenAndServe())

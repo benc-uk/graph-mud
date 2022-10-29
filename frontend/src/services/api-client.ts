@@ -2,6 +2,18 @@ import { msalInstance } from '@/main'
 import { AuthenticationResult } from '@azure/msal-browser'
 import { getUsername } from './auth'
 
+export interface PlayerInfo {
+  name: string
+  class: string
+  description: string
+}
+
+export interface LocationInfo {
+  name: string
+  description: string
+  gameEntry: boolean
+}
+
 export class APIClient {
   public apiEndpoint: string
   public apiScopes: string[]
@@ -11,7 +23,7 @@ export class APIClient {
     this.apiScopes = apiScopes
   }
 
-  async getPlayer() {
+  async getPlayer(): Promise<PlayerInfo> {
     return this.baseRequest('player')
   }
 
@@ -23,6 +35,14 @@ export class APIClient {
 
   async deletePlayer() {
     return this.baseRequest(`player`, 'DELETE')
+  }
+
+  async playerLocation(): Promise<LocationInfo> {
+    return this.baseRequest('player/location')
+  }
+
+  async cmd(cmdText: string) {
+    return this.baseRequest('cmd', 'POST', { text: cmdText })
   }
 
   private async baseRequest(path: string, method = 'GET', body?: any): Promise<any> {
