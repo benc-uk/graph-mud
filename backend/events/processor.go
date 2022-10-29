@@ -41,15 +41,17 @@ func (p *Processor) Process(event any) error {
 				return err
 			}
 
-			// Send message to other players on entry to new location
-			players, err := p.graph.GetPlayersInLocation(locationRes.Props["name"].(string))
-			if err != nil {
-				return err
-			}
+			// Send message to other players on leaving, if you are in a location
+			if locationRes != nil {
+				players, err := p.graph.GetPlayersInLocation(locationRes.Props["name"].(string))
+				if err != nil {
+					return err
+				}
 
-			for _, player := range players {
-				if u := player.Props["username"].(string); u != username {
-					messaging.SendToUser(u, moverName+" leaves", "server", "player_enter")
+				for _, player := range players {
+					if u := player.Props["username"].(string); u != username {
+						messaging.SendToUser(u, moverName+" leaves", "server", "player_enter")
+					}
 				}
 			}
 		}
