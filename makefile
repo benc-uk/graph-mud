@@ -10,13 +10,19 @@ IMAGE_REG ?= ghcr.io
 IMAGE_NAME ?= benc-uk/nano-realms
 IMAGE_TAG ?= latest
 
+# Used only when deploying to container apps
+AZURE_REGION ?= uksouth
+AZURE_RESGRP ?= nano-realms
+AZURE_BASE_NAME ?= nanorealms
+
 # Things you don't want to change
 REPO_DIR := $(abspath $(dir $(lastword $(MAKEFILE_LIST))))
 # Tools
-GOLINT_PATH := $(REPO_DIR)/bin/golangci-lint              # Remove if not using Go
-AIR_PATH := $(REPO_DIR)/bin/air                           # Remove if not using Go
+GOLINT_PATH := $(REPO_DIR)/bin/golangci-lint
+AIR_PATH := $(REPO_DIR)/bin/air
 
-.PHONY: help image push build run lint lint-fix
+.EXPORT_ALL_VARIABLES:
+.PHONY: help images push build run lint lint-fix deploy world-build world-show clean
 .DEFAULT_GOAL := help
 
 help: ## 💬 This help message :)
@@ -38,17 +44,22 @@ lint-fix: ## 📝 Lint & format, attempts to fix errors & modify code
 	$(GOLINT_PATH) run --modules-download-mode=mod --fix
 	cd $(FRONTEND_DIR); npm run lint-fix
 
-images: ## 📦 Build container images for all components
+image-database: ## 📦 Build container image for the database
 	@figlet $@ || true
-	docker build --file ./build/Dockerfile.backend \
-	--build-arg BUILD_INFO="$(BUILD_INFO)" \
-	--build-arg VERSION="$(VERSION)" \
-	--tag $(IMAGE_REG)/$(IMAGE_NAME)-backend:$(IMAGE_TAG) . 
+	docker compose -f build/compose.yaml build database
+image-frontend: ## 📦 Build container image for the frontend
+	@figlet $@ || true
+	docker compose -f build/compose.yaml build database
+image-backend: ## 📦 Build container image for the backend
+	@figlet $@ || true
+	docker compose -f build/compose.yaml build database
+images: ## 📦 Build all container images
+	@figlet $@ || true
+	docker compose -f build/compose.yaml build
 
-push: ## 📤 Push container image to registry
+push: ## 📤 Push container images to registry
 	@figlet $@ || true
-	docker push $(IMAGE_REG)/$(IMAGE_NAME)-backend:$(IMAGE_TAG)
-	docker push $(IMAGE_REG)/$(IMAGE_NAME)-frontend:$(IMAGE_TAG)
+	docker compose -f build/compose.yaml push
 
 build: ## 🔨 Run a local build without a container
 	@figlet $@ || true
@@ -85,3 +96,7 @@ world-build: ## 🌎 (Re)build the world graph
 world-show: ## 📃 Dump a report of the world state
 	@figlet $@ || true
 	@./world/run-script.sh world/dump.cypher
+
+deploy: ## 🚀 Deploy to Azure Container Apps
+	@figlet $@ || true
+	@./deploy/container-apps/deploy.sh

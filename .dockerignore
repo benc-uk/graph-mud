@@ -20,7 +20,6 @@ _config.yml
 # Outputs, binaries etc
 **/bin/
 **/tmp/
-**/world/
 **/data/
 **/obj/
 **/dist/

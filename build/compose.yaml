@@ -1,0 +1,62 @@
+name: nano-realms
+version: "3.9"
+
+# Docker compose file for nano-realms
+# Call via the makefile, otherwise you'll need to set all the vars
+
+services:
+  frontend:
+    image: ${IMAGE_REG}/${IMAGE_NAME}-frontend:${IMAGE_TAG}
+    build:
+      context: ..
+      dockerfile: ./build/Dockerfile.frontend
+      args:
+        VERSION: ${VERSION}
+        BUILD_INFO: ${BUILD_INFO}
+    ports:
+      - "8001:8001"
+    environment:
+      API_ENDPOINT: http://localhost:8000
+    networks:
+      - front
+
+  backend:
+    image: ${IMAGE_REG}/${IMAGE_NAME}-backend:${IMAGE_TAG}
+    build:
+      context: ..
+      dockerfile: ./build/Dockerfile.backend
+      args:
+        VERSION: ${VERSION}
+        BUILD_INFO: ${BUILD_INFO}
+    ports:
+      - "8000:8000"
+    environment:
+      DB_HOST: database
+    restart: always
+    networks:
+      - back
+      - front
+
+  database:
+    image: ${IMAGE_REG}/${IMAGE_NAME}-database:${IMAGE_TAG}
+    build:
+      context: ..
+      dockerfile: ./build/Dockerfile.database    
+    environment:
+      NEO4J_AUTH: none
+    ports:
+      - "7687:7687"
+      - "7474:7474"
+    volumes:
+      - type: volume
+        source: db-data
+        target: /data
+    networks:
+      - back
+
+networks:
+  front:
+  back:
+
+volumes:
+  db-data:

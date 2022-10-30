@@ -68,18 +68,21 @@ func (p *Processor) Process(event any) error {
 			if err != nil {
 				return err
 			}
-			locDesc := locationRes.Props["description"].(string)
-			messaging.SendToUser(username, "You move into: "+locDesc, "server", "move")
 
-			// Send message to other players on entry to new location
-			players, err := p.graph.GetPlayersInLocation(locationRes.Props["name"].(string))
-			if err != nil {
-				return err
-			}
+			if locationRes != nil {
+				locDesc := locationRes.Props["description"].(string)
+				messaging.SendToUser(username, "You move into: "+locDesc, "server", "move")
 
-			for _, player := range players {
-				if u := player.Props["username"].(string); u != username {
-					messaging.SendToUser(u, moverName+" enters", "server", "player_enter")
+				// Send message to other players on entry to new location
+				players, err := p.graph.GetPlayersInLocation(locationRes.Props["name"].(string))
+				if err != nil {
+					return err
+				}
+
+				for _, player := range players {
+					if u := player.Props["username"].(string); u != username {
+						messaging.SendToUser(u, moverName+" enters", "server", "player_enter")
+					}
 				}
 			}
 		}

@@ -11,8 +11,11 @@ export class WebSocketClient {
   private socket: WebSocket
 
   constructor(apiEndpoint: string) {
+    // if on https, use wss, otherwise ws
+    const protocol = window.location.protocol === 'https:' ? 'wss' : 'ws'
+
     const endpointSplit = apiEndpoint.split('://')
-    this.socket = new WebSocket(`ws://${endpointSplit[1]}/connect`)
+    this.socket = new WebSocket(`${protocol}://${endpointSplit[1]}/connect`)
 
     this.socket.onopen = () => {
       console.log('🔌 Connected to WebSocket')

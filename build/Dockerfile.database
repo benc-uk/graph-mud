@@ -1,0 +1,9 @@
+ARG VERSION="4.4"
+FROM neo4j:${VERSION}
+
+COPY world/realm.cypher /root/realm.cypher
+
+EXPOSE 7474 7687
+
+ENTRYPOINT [ "tini", "-g", "--", "/startup/docker-entrypoint.sh" ]
+CMD ["neo4j"]

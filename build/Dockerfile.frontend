@@ -1,16 +1,9 @@
 # ===================================================================================
-# === Stage 1: Build the Go service code into 'server' exe ==========================
+# === Stage 1: Build static serving host ============================================
 # ===================================================================================
-FROM golang:1.19-alpine as go-build
-
-ARG VERSION="0.0.1"
-ARG BUILD_INFO="Not provided"
-ARG CGO_ENABLED=0
+FROM golang:1.19-alpine as host-build
 
 WORKDIR /build
-
-# Install system dependencies, if CGO_ENABLED=1
-RUN if [[ $CGO_ENABLED -eq 1 ]]; then apk update && apk add gcc musl-dev; fi
 
 # Fetch and cache Go modules
 COPY go.mod .
@@ -18,26 +11,52 @@ COPY go.sum .
 RUN go mod download
 
 # Copy in Go source files
-COPY backend/ ./backend/
-COPY pkg/ ./pkg/
+COPY frontend-host/ ./frontend-host
+COPY pkg/ ./pkg
 
 # Now run the build
-# Inject version and build details, to be available at runtime 
-RUN GO111MODULE=on CGO_ENABLED=$CGO_ENABLED GOOS=linux \
-  go build \
-  -ldflags "-X main.version=$VERSION -X 'main.buildInfo=$BUILD_INFO'" \
-  -o backend nano-realms/backend
+RUN GO111MODULE=on CGO_ENABLED=0 GOOS=linux go build \
+  -o frontend-host nano-realms/frontend-host
 
 # ================================================================================================
-# === Stage 2: Get server binary into a lightweight container ====================================
+# === Stage 2: Build and bundle the Vue.js app ===================================================
+# ================================================================================================
+FROM node:18-alpine as frontend-build
+
+ARG VERSION="0.0.1"
+ARG BUILD_INFO="Not provided"
+
+ENV VUE_APP_BUILD_INFO=${BUILD_INFO}
+WORKDIR /build
+
+# Install all the Vue.js dev tools & CLI, and our app dependencies 
+COPY frontend/package*.json ./
+# We inject and update the version in package.json at build time from the $VERSION build arg
+RUN npm version $VERSION --allow-same-version
+RUN npm install --silent
+
+# Copy in the Vue.js app source
+COPY frontend/.eslintrc.json .
+COPY frontend/tsconfig.json .
+COPY .prettierrc .
+COPY frontend/public ./public
+COPY frontend/src ./src
+
+# Now main Vue CLI build & bundle, this will output to ./dist
+RUN npm run build
+
+# ================================================================================================
+# === Stage 3: Bundle server exe and Vue dist in runtime image ===================================
 # ================================================================================================
 FROM scratch
 WORKDIR /app 
 
+# Copy in output from Vue bundle (the dist)
+COPY --from=frontend-build /build/dist ./dist
 # Copy the Go server binary
-COPY --from=go-build /build/backend . 
+COPY --from=host-build /build/frontend-host . 
 
-ENV PORT=8000
+EXPOSE 8001
 
 # That's it! Just run the server 
-CMD [ "./backend"]
+CMD [ "./frontend-host"]
