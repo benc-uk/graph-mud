@@ -18,6 +18,10 @@
     </select>
     <br />
 
+    <div v-if="error" class="error">
+      {{ error }}
+    </div>
+
     <div class="row">
       <button @click="save" class="golden-btn mr-2" v-show="formComplete">CREATE</button>
       <button @click="cancel" class="golden-btn">CANCEL</button>
@@ -28,6 +32,7 @@
 <script lang="ts">
 import { api } from '@/main'
 import { defineComponent } from 'vue'
+import { adjectives } from '@/language'
 
 export default defineComponent({
   name: 'CharacterEdit',
@@ -58,74 +63,9 @@ export default defineComponent({
       { name: 'Wizard', value: 'wizard' },
     ],
 
-    descriptionList: [
-      'muddy',
-      'grim',
-      'huaghty',
-      'tall',
-      'short',
-      'fat',
-      'skinny',
-      'ugly',
-      'pretty',
-      'handsome',
-      'beautiful',
-      'dashing',
-      'dapper',
-      'dainty',
-      'dazzling',
-      'delightful',
-      'divine',
-      'dopey',
-      'dorky',
-      'dramatic',
-      'dreamy',
-      'drunk',
-      'dull',
-      'dumb',
-      'dusty',
-      'dutiful',
-      'eager',
-      'earnest',
-      'easy',
-      'elegant',
-      'embarrassed',
-      'enchanting',
-      'encouraging',
-      'energetic',
-      'enthusiastic',
-      'envious',
-      'evil',
-      'excellent',
-      'excited',
-      'expensive',
-      'exuberant',
-      'fabulous',
-      'fancy',
-      'fantastic',
-      'fierce',
-      'filthy',
-      'fine',
-      'foolish',
-      'fragile',
-      'frail',
-      'frantic',
-      'friendly',
-      'frightened',
-      'funny',
-      'fuzzy',
-      'gentle',
-      'giant',
-      'giddy',
-      'gigantic',
-      'glamorous',
-      'gleaming',
-      'glorious',
-      'good',
-      'gorgeous',
-      'graceful',
-      'greasy',
-    ],
+    descriptionList: adjectives,
+
+    error: '',
   }),
 
   methods: {
@@ -139,6 +79,7 @@ export default defineComponent({
         this.$router.push('/')
       } catch (err) {
         console.error('### Error creating player:', err)
+        this.error = err as any
       }
     },
 

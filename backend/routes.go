@@ -78,6 +78,13 @@ func (api API) newPlayer(resp http.ResponseWriter, req *http.Request) {
 		return
 	}
 
+	// Check for lobby as a way to check if world is setup
+	lobbyExists, err := api.graph.NodeExists("Location", "name", "lobby")
+	if err != nil || !lobbyExists {
+		problem.Wrap(500, req.RequestURI, "none", errors.New("Realm database has not been initialized! Contact the server admin")).Send(resp)
+		return
+	}
+
 	err = json.NewDecoder(req.Body).Decode(&newPlayer)
 	if err != nil {
 		problem.Wrap(400, req.RequestURI, "new", err).Send(resp)

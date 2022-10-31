@@ -2,9 +2,16 @@ import { PublicClientApplication, LogLevel, AccountInfo, AuthenticationResult } 
 import { msalInstance } from '@/main'
 
 const LOG_LEVEL = LogLevel.Warning
+export let globalClientId = ''
+
+// Create and store a unique ID for this browser
+if (!localStorage.getItem('browserId')) {
+  localStorage.setItem('browserId', makeId(5))
+}
 
 // Config object to be passed to Msal on creation
 export function msalInit(clientId: string) {
+  globalClientId = clientId
   // If we have no clientId, we pretend we have an instance and mock it
   if (!clientId) {
     console.log('### Azure AD sign-in: disabled. Will run in demo mode with dummy user')
@@ -78,7 +85,7 @@ export function getUsername() {
 }
 
 const fakeAccount: AccountInfo = {
-  username: 'demo@example.net',
+  username: 'demo_' + localStorage.getItem('browserId') + '@example.net',
   tenantId: '00000000-0000-0000-0000-000000000000',
   nativeAccountId: '00000000-0000-0000-0000-000000000000',
   homeAccountId: '00000000-0000-0000-0000-000000000000',
@@ -86,7 +93,7 @@ const fakeAccount: AccountInfo = {
   name: 'Demo User',
   idToken: '',
   idTokenClaims: {},
-  environment: 'dummy.example.net',
+  environment: 'demo_' + localStorage.getItem('browserId') + '@example.net',
 }
 
 const fakeJWT =
@@ -108,4 +115,15 @@ const fakeAuthRes: AuthenticationResult = {
   cloudGraphHostName: '',
   msGraphHost: '',
   state: '',
+}
+
+function makeId(tokenLen: number) {
+  if (tokenLen == null) {
+    tokenLen = 16
+  }
+  let text = ''
+  const possible = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789'
+  for (let i = 0; i < tokenLen; ++i) text += possible.charAt(Math.floor(Math.random() * possible.length))
+
+  return text
 }

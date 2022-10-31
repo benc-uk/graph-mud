@@ -84,6 +84,13 @@ textarea {
   flex-direction: column;
 }
 
+.error {
+  color: rgb(216, 51, 22);
+  border: #a54e07 2px solid;
+  padding: 0.8rem;
+  background-color: #111;
+  border-radius: 0.4rem;
+}
 /* center dialog popup */
 .dialog {
   position: fixed;

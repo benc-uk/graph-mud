@@ -15,6 +15,13 @@ export interface LocationInfo {
   exits: string[]
 }
 
+export interface ServerInfo {
+  version: string
+  hostname: string
+  healthy: boolean
+  buildInfo: string
+}
+
 export class APIClient {
   public apiEndpoint: string
   public apiScopes: string[]
@@ -42,25 +49,31 @@ export class APIClient {
     return this.baseRequest('player/location')
   }
 
+  async serverStatus(): Promise<ServerInfo> {
+    return this.baseRequest('status', 'GET', null, true)
+  }
+
   async cmd(cmdText: string) {
     return this.baseRequest('cmd', 'POST', { text: cmdText })
   }
 
-  private async baseRequest(path: string, method = 'GET', body?: any): Promise<any> {
+  private async baseRequest(path: string, method = 'GET', body?: any, noAuth = false): Promise<any> {
     let tokenRes: AuthenticationResult | null = null
-    try {
-      tokenRes = await msalInstance.acquireTokenSilent({
-        scopes: this.apiScopes,
-      })
-    } catch (e) {
-      tokenRes = await msalInstance.acquireTokenPopup({
-        scopes: this.apiScopes,
-      })
+    if (!noAuth) {
+      try {
+        tokenRes = await msalInstance.acquireTokenSilent({
+          scopes: this.apiScopes,
+        })
+      } catch (e) {
+        tokenRes = await msalInstance.acquireTokenPopup({
+          scopes: this.apiScopes,
+        })
+      }
+      if (!tokenRes) throw new Error('Failed to get auth token')
     }
-    if (!tokenRes) throw new Error('Failed to get auth token')
 
     const headers = new Headers({ 'Content-Type': 'application/json' })
-    if (tokenRes.accessToken) {
+    if (tokenRes && tokenRes.accessToken) {
       headers.append('Authorization', `Bearer ${tokenRes.accessToken}`)
     }
     if (getUsername()) {

@@ -94,6 +94,15 @@ func main() {
 		IdleTimeout:  10 * time.Second,
 	}
 
+	worldOK, err := graphService.NodeExists("Location", "name", "lobby")
+	if err != nil {
+		log.Fatal(err)
+	}
+	if !worldOK {
+		api.Healthy = false
+		log.Println("### 💥 SEVERE! Database not configured, please run load the realm data!")
+	}
+
 	log.Printf("### 🌐 Nano Realms Backend API, listening on port: %d", serverPort)
 	log.Printf("### 🚀 Build details: v%s (%s)", version, buildInfo)
 	log.Fatal(srv.ListenAndServe())
