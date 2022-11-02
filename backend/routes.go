@@ -92,7 +92,7 @@ func (api API) newPlayer(resp http.ResponseWriter, req *http.Request) {
 	}
 	newPlayer.Username = username
 
-	err = api.event.Process(events.CreateEvent{
+	err = api.event.Process(&events.CreateEvent{
 		Type: events.TypePlayer,
 		Props: map[string]interface{}{
 			"username":    newPlayer.Username,
@@ -107,7 +107,7 @@ func (api API) newPlayer(resp http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	err = api.event.Process(events.MoveEvent{
+	err = api.event.Process(&events.MoveEvent{
 		NodeType:  events.TypePlayer,
 		NodeProp:  "username",
 		NodeValue: newPlayer.Username,
@@ -132,7 +132,7 @@ func (api API) deletePlayer(resp http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	err := api.event.Process(events.DestroyEvent{
+	err := api.event.Process(&events.DestroyEvent{
 		NodeType: events.TypePlayer,
 		Prop:     "username",
 		Value:    username,

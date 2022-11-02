@@ -3,8 +3,8 @@
 
 // // ------------------------------------------------------------------
 
-// MATCH (n:Player {username:'test@test.com'})
-// OPTIONAL MATCH (n)-[:IN]->(s)
+// MATCH (p:Player {username:'test@test.com'})
+// OPTIONAL MATCH (p)-[r:IN]->(s)
 // MATCH (d:Location {name:'kitchens'})
 // DELETE r
 // CREATE (n)-[:IN]->(d);

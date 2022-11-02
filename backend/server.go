@@ -101,6 +101,8 @@ func main() {
 	if !worldOK {
 		api.Healthy = false
 		log.Println("### 💥 SEVERE! Database not configured, please run load the realm data!")
+	} else {
+		log.Println("### 🌍 Realm data appears OK")
 	}
 
 	log.Printf("### 🌐 Nano Realms Backend API, listening on port: %d", serverPort)

@@ -53,7 +53,7 @@ func (h *Handler) Handle(username string, cmd string) error {
 					return errors.New("Location not found")
 				}
 
-				return h.event.Process(events.MovePlayerEvent(username, loc.Props["name"].(string)))
+				return h.event.Process(events.NewPlayerMoveEvent(h.graph, username, loc.Props["name"].(string)))
 			}
 		}
 
@@ -62,14 +62,14 @@ func (h *Handler) Handle(username string, cmd string) error {
 	}
 
 	if cParts[0] == "$play" {
-		e := events.MovePlayerEvent(username, "gameEntry")
+		e := events.NewPlayerMoveEvent(h.graph, username, "gameEntry")
 		e.DestProp = "gameEntry"
 		e.DestValue = true
 		return h.event.Process(e)
 	}
 
 	if cParts[0] == "$lobby" {
-		return h.event.Process(events.MovePlayerEvent(username, "lobby"))
+		return h.event.Process(events.NewPlayerMoveEvent(h.graph, username, "lobby"))
 	}
 
 	messaging.SendToUser(username, "Invalid command: "+cmd, "command", "invalid")

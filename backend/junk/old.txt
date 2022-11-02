@@ -1,0 +1,138 @@
+
+	/*
+			ce, isCreateEvent := event.(CreateEvent)
+			if isCreateEvent {
+				return p.createNode(ce)
+			}
+
+			if me, isMoveEvent := event.(MoveEvent); isMoveEvent {
+				username := me.NodeValue.(string)
+				playerRes, err := p.graph.GetPlayer(username)
+				if err != nil {
+					return err
+				}
+				moverName := playerRes.Props["name"].(string)
+
+				// Send messages
+				if me.NodeType == TypePlayer {
+					locationRes, err := p.graph.GetPlayerLocation(username)
+					if err != nil {
+						return err
+					}
+
+					// Send message to other players on leaving, if you are in a location
+					if locationRes != nil {
+						players, err := p.graph.GetPlayersInLocation(locationRes.Props["name"].(string))
+						if err != nil {
+							return err
+						}
+
+						for _, player := range players {
+							if u := player.Props["username"].(string); u != username {
+								messaging.SendToUser(u, moverName+" leaves", "server", "player_enter")
+							}
+						}
+					}
+				}
+
+				// Update the graph database
+				err = p.moveNode(me)
+				if err != nil {
+					return err
+				}
+
+				// Send messages
+				if me.NodeType == TypePlayer {
+					locationRes, err := p.graph.GetPlayerLocation(username)
+					if err != nil {
+						return err
+					}
+
+					if locationRes != nil {
+						locDesc := locationRes.Props["description"].(string)
+						messaging.SendToUser(username, "You move into: "+locDesc, "server", "move")
+
+						// Send message to other players on entry to new location
+						players, err := p.graph.GetPlayersInLocation(locationRes.Props["name"].(string))
+						if err != nil {
+							return err
+						}
+
+						for _, player := range players {
+							if u := player.Props["username"].(string); u != username {
+								messaging.SendToUser(u, moverName+" enters", "server", "player_enter")
+							}
+						}
+					}
+				}
+			}
+
+			de, isDestroyEvent := event.(DestroyEvent)
+			if isDestroyEvent {
+				return p.deleteNode(de)
+			}
+
+			return nil
+		}
+
+		func (e *MoveEvent) Process(p *Processor) error {
+			username := e.NodeValue.(string)
+			playerRes, err := p.graph.GetPlayer(username)
+			if err != nil {
+				return err
+			}
+			moverName := playerRes.Props["name"].(string)
+
+			// Send messages
+			if e.NodeType == TypePlayer {
+				locationRes, err := p.graph.GetPlayerLocation(username)
+				if err != nil {
+					return err
+				}
+
+				// Send message to other players on leaving, if you are in a location
+				if locationRes != nil {
+					players, err := p.graph.GetPlayersInLocation(locationRes.Props["name"].(string))
+					if err != nil {
+						return err
+					}
+
+					for _, player := range players {
+						if u := player.Props["username"].(string); u != username {
+							messaging.SendToUser(u, moverName+" leaves", "server", "player_enter")
+						}
+					}
+				}
+			}
+
+			// Update the graph database
+			err = p.moveNode(e)
+			if err != nil {
+				return err
+			}
+
+			// Send messages
+			if e.NodeType == TypePlayer {
+				locationRes, err := p.graph.GetPlayerLocation(username)
+				if err != nil {
+					return err
+				}
+
+				if locationRes != nil {
+					locDesc := locationRes.Props["description"].(string)
+					messaging.SendToUser(username, "You move into: "+locDesc, "server", "move")
+
+					// Send message to other players on entry to new location
+					players, err := p.graph.GetPlayersInLocation(locationRes.Props["name"].(string))
+					if err != nil {
+						return err
+					}
+
+					for _, player := range players {
+						if u := player.Props["username"].(string); u != username {
+							messaging.SendToUser(u, moverName+" enters", "server", "player_enter")
+						}
+					}
+				}
+			}
+	*/

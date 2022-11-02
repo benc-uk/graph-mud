@@ -1,8 +1,31 @@
 package events
 
+import (
+	"nano-realms/backend/graph"
+
+	"github.com/neo4j/neo4j-go-driver/v4/neo4j"
+)
+
+type Processor struct {
+	db    neo4j.Driver
+	graph *graph.GraphService
+}
+
+type Processable interface {
+	PreHook(*Processor) error
+	Process(*Processor) error
+	PostHook(*Processor) error
+}
+
+type BaseEvent struct {
+	PreHookFunc  func() error
+	PostHookFunc func() error
+}
+
 type CreateEvent struct {
 	Type  NodeType
 	Props map[string]any
+	BaseEvent
 }
 
 type MoveEvent struct {
@@ -15,12 +38,14 @@ type MoveEvent struct {
 	DestValue any
 
 	Relation Relationship
+	BaseEvent
 }
 
 type DestroyEvent struct {
 	NodeType NodeType
 	Prop     string
 	Value    any
+	BaseEvent
 }
 
 type NodeType string
