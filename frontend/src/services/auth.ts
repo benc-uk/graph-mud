@@ -4,7 +4,7 @@ import { msalInstance } from '@/main'
 const LOG_LEVEL = LogLevel.Warning
 export let globalClientId = ''
 
-// Create and store a unique ID for this browser
+// Create and store a unique ID for this browser, used for demo accounts
 if (!localStorage.getItem('browserId')) {
   localStorage.setItem('browserId', makeId(5))
 }
@@ -85,19 +85,16 @@ export function getUsername() {
 }
 
 const fakeAccount: AccountInfo = {
-  username: 'demo_' + localStorage.getItem('browserId') + '@example.net',
+  username: fakeUsername(),
   tenantId: '00000000-0000-0000-0000-000000000000',
   nativeAccountId: '00000000-0000-0000-0000-000000000000',
   homeAccountId: '00000000-0000-0000-0000-000000000000',
   localAccountId: '00000000-0000-0000-0000-000000000000',
-  name: 'Demo User',
+  name: `Demo User ${localStorage.getItem('browserId')}`,
   idToken: '',
   idTokenClaims: {},
-  environment: 'demo_' + localStorage.getItem('browserId') + '@example.net',
+  environment: fakeUsername(),
 }
-
-const fakeJWT =
-  'eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJodHRwOi8vbG9jYWxob3N0OjgwODAvYmxhaCIsInN1YiI6Im5hbm8tcmVhbG1zIiwibmJmIjoxNjY1Njk0NTQwLCJpYXQiOjE2NjU2OTQ1NDAsImV4cCI6MTY5NzIzMDU0MCwianRpIjoiaTl6b21xNzIiLCJhdWQiOlsibmFuby1yZWFsbXMiXSwiYXV0aF90aW1lIjoxNjk3MjMwNTQwfQ.nsX2Yyi19HAEjL41MmVhwHR6wIOVEUfdXVAXmjJQwxMdX0Puuueao6x8ES9ENLdX-YcbshFTQpxQXP7oG_BYowiuGQ7wZVZ00L3DklbSmo4XYtSDH5G1ndAHu3EtModbhdiuRYHLkF5SAWGBau2OwplLjS0-KslyhB2MpvT7rqNURyBT0hlWy8sxV2GU15fc08MmU8liUbTLp-SWzreJZjcJPv1idK2pqbX_f1U5uSgYCd334esgOdiUVAgOwuDTUD9W6BCX5FDIX6YAi3W0WX33e3_JSqJVUEkKwa0hqqqGUhA5gfxiOrZ6ZTeWh0V9MdXcR34ndIrBm_jkK4tJPA'
 
 const fakeAuthRes: AuthenticationResult = {
   authority: 'https://login.microsoftonline.com/00000000-0000-0000-0000-000000000000',
@@ -107,7 +104,7 @@ const fakeAuthRes: AuthenticationResult = {
   account: fakeAccount,
   idToken: '',
   idTokenClaims: {},
-  accessToken: fakeJWT,
+  accessToken: 'header.' + btoa(`{"preferred_username": "${fakeUsername()}"`) + '.signature',
   fromCache: false,
   expiresOn: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
   tokenType: 'Bearer',
@@ -126,4 +123,8 @@ function makeId(tokenLen: number) {
   for (let i = 0; i < tokenLen; ++i) text += possible.charAt(Math.floor(Math.random() * possible.length))
 
   return text
+}
+
+function fakeUsername() {
+  return `demo_${localStorage.getItem('browserId')}@example.net`
 }

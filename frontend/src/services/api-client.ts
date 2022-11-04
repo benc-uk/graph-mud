@@ -70,14 +70,14 @@ export class APIClient {
         })
       }
       if (!tokenRes) throw new Error('Failed to get auth token')
+      console.log('tokenRes', tokenRes)
     }
 
     const headers = new Headers({ 'Content-Type': 'application/json' })
     if (tokenRes && tokenRes.accessToken) {
+      console.log('tokenRes.accessToken', tokenRes.accessToken)
+
       headers.append('Authorization', `Bearer ${tokenRes.accessToken}`)
-    }
-    if (getUsername()) {
-      headers.append('X-Username', getUsername())
     }
 
     const response = await fetch(`${this.apiEndpoint}/${path}`, {

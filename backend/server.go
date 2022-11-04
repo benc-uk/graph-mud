@@ -23,7 +23,6 @@ import (
 type API struct {
 	*api.Base
 	event   *events.Processor
-	graph   *graph.GraphService
 	command *commands.Handler
 }
 
@@ -60,13 +59,12 @@ func main() {
 	// Wrapper API with anonymous inner new Base API
 	router := mux.NewRouter()
 
-	graphService := graph.NewGraphService(dbDriver)
-	eventProcessor := events.NewProcessor(dbDriver, graphService)
+	graph.InitService(dbDriver)
+	eventProcessor := events.NewProcessor(dbDriver)
 	api := API{
 		api.NewBase(serviceName, version, buildInfo, healthy, router),
 		eventProcessor,
-		graphService,
-		commands.NewHandler(graphService, eventProcessor),
+		commands.NewHandler(eventProcessor),
 	}
 
 	// Main REST API routes
@@ -94,7 +92,7 @@ func main() {
 		IdleTimeout:  10 * time.Second,
 	}
 
-	worldOK, err := graphService.NodeExists("Location", "name", "lobby")
+	worldOK, err := graph.Service.NodeExists("Location", "name", "lobby")
 	if err != nil {
 		log.Fatal(err)
 	}

@@ -2,15 +2,13 @@ package events
 
 import (
 	"fmt"
-	"nano-realms/backend/graph"
 
 	"github.com/neo4j/neo4j-go-driver/v4/neo4j"
 )
 
-func NewProcessor(dbDriver neo4j.Driver, graph *graph.GraphService) *Processor {
+func NewProcessor(dbDriver neo4j.Driver) *Processor {
 	return &Processor{
-		db:    dbDriver,
-		graph: graph,
+		db: dbDriver,
 	}
 }
 

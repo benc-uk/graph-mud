@@ -14,7 +14,7 @@ import (
 	"net/http"
 
 	"nano-realms/backend/events"
-	"nano-realms/backend/game"
+	"nano-realms/backend/graph"
 	"nano-realms/pkg/auth"
 	"nano-realms/pkg/problem"
 
@@ -30,6 +30,24 @@ type LocationResp struct {
 	Exits       []string `json:"exits"`
 }
 
+type NewPlayer struct {
+	Username    string
+	Name        string
+	Class       string
+	Description string
+}
+
+type PlayerResp struct {
+	Username    string `mapstructure:"username" json:"username"`
+	Name        string `mapstructure:"name" json:"name"`
+	Class       string `mapstructure:"class" json:"class"`
+	Description string `mapstructure:"description" json:"description"`
+}
+
+type Command struct {
+	Text string
+}
+
 // All routes we need should be registered here
 func (api API) addRoutes(router *mux.Router) {
 	router.HandleFunc("/player", auth.JWTValidator(api.getPlayer)).Methods("GET")
@@ -43,7 +61,7 @@ func (api API) addRoutes(router *mux.Router) {
 func (api API) getPlayer(resp http.ResponseWriter, req *http.Request) {
 	username := req.Header.Get("X-Username")
 
-	res, err := api.graph.QuerySingleNode("MATCH (p:Player {username: $p0}) RETURN p", []string{username})
+	res, err := graph.Service.QuerySingleNode("MATCH (p:Player {username: $p0}) RETURN p", []string{username})
 	if err != nil {
 		problem.Wrap(500, req.RequestURI, "username", err).Send(resp)
 		return
@@ -53,7 +71,7 @@ func (api API) getPlayer(resp http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	player := &game.Player{}
+	player := &PlayerResp{}
 	_ = mapstructure.Decode(res.Props, player)
 
 	resp.Header().Set("Content-Type", "application/json")
@@ -64,7 +82,7 @@ func (api API) getPlayer(resp http.ResponseWriter, req *http.Request) {
 
 // Handle new player creation
 func (api API) newPlayer(resp http.ResponseWriter, req *http.Request) {
-	var newPlayer game.NewPlayer
+	var newPlayer NewPlayer
 	username := req.Header.Get("X-Username")
 	if username == "" {
 		problem.Wrap(400, req.RequestURI, "username", errors.New("Missing username header")).Send(resp)
@@ -72,14 +90,14 @@ func (api API) newPlayer(resp http.ResponseWriter, req *http.Request) {
 	}
 
 	// check player exists
-	exists, err := api.graph.NodeExists("Player", "username", username)
+	exists, err := graph.Service.NodeExists("Player", "username", username)
 	if err != nil || exists {
 		problem.Wrap(409, req.RequestURI, "username", errors.New("Player already exists")).Send(resp)
 		return
 	}
 
 	// Check for lobby as a way to check if world is setup
-	lobbyExists, err := api.graph.NodeExists("Location", "name", "lobby")
+	lobbyExists, err := graph.Service.NodeExists("Location", "name", "lobby")
 	if err != nil || !lobbyExists {
 		problem.Wrap(500, req.RequestURI, "none", errors.New("Realm database has not been initialized! Contact the server admin")).Send(resp)
 		return
@@ -147,8 +165,9 @@ func (api API) deletePlayer(resp http.ResponseWriter, req *http.Request) {
 }
 
 func (api API) executeCommand(resp http.ResponseWriter, req *http.Request) {
-	var cmd game.Command
+	var cmd Command
 	username := req.Header.Get("X-Username")
+
 	if username == "" {
 		problem.Wrap(400, req.RequestURI, "username", errors.New("Missing username header")).Send(resp)
 		return
@@ -177,13 +196,13 @@ func (api API) playerLocation(resp http.ResponseWriter, req *http.Request) {
 		problem.Wrap(400, req.RequestURI, "username", errors.New("Missing username header")).Send(resp)
 		return
 	}
-	res, err := api.graph.GetPlayerLocation(username)
+	res, err := graph.Service.GetPlayerLocation(username)
 	if err != nil {
 		problem.Wrap(500, req.RequestURI, "username", err).Send(resp)
 		return
 	}
 
-	exits, err := api.graph.QueryMultiRelationship(`MATCH (:Player {username:$p0})-[:IN]->(l:Location) MATCH (l)-[r]->(:Location) RETURN r`, []string{username})
+	exits, err := graph.Service.QueryMultiRelationship(`MATCH (:Player {username:$p0})-[:IN]->(l:Location) MATCH (l)-[r]->(:Location) RETURN r`, []string{username})
 	if err != nil {
 		problem.Wrap(500, req.RequestURI, "username", err).Send(resp)
 		return

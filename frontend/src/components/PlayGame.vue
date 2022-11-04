@@ -55,6 +55,7 @@ export default defineComponent({
     const wsClient = new WebSocketClient(api.apiEndpoint)
 
     wsClient.addMessageCallback(this.handleMessage)
+    wsClient.addClosedCallback(this.handleClosed)
 
     const p = await api.getPlayer()
     this.player = `You are ${p.name} a ${p.description} ${p.class}`
@@ -84,6 +85,15 @@ export default defineComponent({
       if (msg.type === 'move') {
         this.update()
       }
+    },
+
+    handleClosed() {
+      this.msgLog.push({
+        type: 'error',
+        source: 'server',
+        text: 'Connection to server lost',
+        timestamp: new Date(),
+      })
     },
 
     async submitCmd() {
@@ -193,6 +203,10 @@ export default defineComponent({
 .server-connection {
   color: rgb(101, 209, 101);
 }
+.server-error {
+  color: rgb(235, 25, 154);
+  font-weight: 700;
+}
 
 .command-invalid {
   color: rgb(219, 195, 60);
@@ -202,8 +216,7 @@ export default defineComponent({
   color: rgb(228, 104, 47);
 }
 
-.server-error {
-  color: rgb(235, 25, 154);
-  font-weight: 700;
+.command-say {
+  color: rgb(49, 228, 198);
 }
 </style>

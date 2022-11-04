@@ -3,6 +3,7 @@ package messaging
 import (
 	"fmt"
 	"log"
+	"nano-realms/backend/graph"
 	"net/http"
 	"os"
 	"time"
@@ -38,6 +39,15 @@ type ConnectRequest struct {
 
 func AddRoutes(router *mux.Router) {
 	router.HandleFunc("/connect", userConnect)
+}
+
+func NewGameMessage(text string, source string, typeStr string) GameMessage {
+	return GameMessage{
+		Source:    source,
+		Text:      text,
+		Type:      typeStr,
+		TimeStamp: time.Now(),
+	}
 }
 
 func userConnect(resp http.ResponseWriter, req *http.Request) {
@@ -84,5 +94,18 @@ func SendToUser(username string, message string, source string, typeStr string) 
 
 	if err != nil {
 		log.Println(err)
+	}
+}
+
+func SendToAllUsersInLocation(location string, message GameMessage, exceptUsername string) {
+	players, err := graph.Service.GetPlayersInLocation(location)
+	if err != nil {
+		return
+	}
+
+	for _, player := range players {
+		if u := player.Props["username"].(string); u != exceptUsername {
+			SendToUser(u, message.Text, message.Source, message.Type)
+		}
 	}
 }

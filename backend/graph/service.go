@@ -1,17 +1,20 @@
 package graph
 
 import (
+	"errors"
 	"fmt"
 
 	"github.com/neo4j/neo4j-go-driver/v4/neo4j"
 )
 
+var Service *GraphService
+
 type GraphService struct {
 	db neo4j.Driver
 }
 
-func NewGraphService(db neo4j.Driver) *GraphService {
-	return &GraphService{
+func InitService(db neo4j.Driver) {
+	Service = &GraphService{
 		db: db,
 	}
 }
@@ -136,7 +139,14 @@ func (s *GraphService) GetSingleNodeById(id int64) (*neo4j.Node, error) {
 
 func (s *GraphService) GetPlayerLocation(username string) (*neo4j.Node, error) {
 	query := "MATCH (p:Player {username: $p0})-[:IN]->(l:Location) RETURN l"
-	return s.QuerySingleNode(query, []string{username})
+	loc, err := s.QuerySingleNode(query, []string{username})
+	if err != nil {
+		return nil, err
+	}
+	if loc == nil {
+		return nil, errors.New("player location not found")
+	}
+	return loc, nil
 }
 
 func (s *GraphService) GetPlayersInLocation(locationName string) ([]neo4j.Node, error) {
@@ -146,5 +156,12 @@ func (s *GraphService) GetPlayersInLocation(locationName string) ([]neo4j.Node, 
 
 func (s *GraphService) GetPlayer(username string) (*neo4j.Node, error) {
 	query := "MATCH (p:Player {username: $p0}) RETURN p"
-	return s.QuerySingleNode(query, []string{username})
+	player, err := s.QuerySingleNode(query, []string{username})
+	if err != nil {
+		return nil, err
+	}
+	if player == nil {
+		return nil, fmt.Errorf("player %s not found", username)
+	}
+	return player, nil
 }

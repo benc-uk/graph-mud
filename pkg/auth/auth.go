@@ -27,13 +27,6 @@ var AppScopeName = "User.Read"
 func JWTValidator(next http.HandlerFunc) http.HandlerFunc {
 
 	return func(w http.ResponseWriter, r *http.Request) {
-		// Disable check if client id is not set, this is running in demo / unsecured mode
-		clientID := os.Getenv("AUTH_CLIENT_ID")
-		if clientID == "" {
-			log.Println("### Auth: No validation as AUTH_CLIENT_ID is not set")
-			next(w, r)
-			return
-		}
 
 		// Get auth header & bearer scheme
 		authHeader := r.Header.Get("Authorization")
@@ -50,6 +43,23 @@ func JWTValidator(next http.HandlerFunc) http.HandlerFunc {
 		}
 		if strings.ToLower(authParts[0]) != "bearer" {
 			w.WriteHeader(401)
+			return
+		}
+
+		// Just decode the token payload, we don't verify the signature
+		// Grab preferred_username claim from token
+		username, err := getClaimFromJWT(authParts[1], "preferred_username")
+		if err == nil && username != "" {
+			r.Header.Set("X-Username", username)
+		}
+
+		// Beyond here we fully validate the JWT token
+
+		// Disable check if client id is not set, this is running in demo / unsecured mode
+		clientID := os.Getenv("AUTH_CLIENT_ID")
+		if clientID == "" {
+			log.Println("### Auth: No validation as AUTH_CLIENT_ID is not set")
+			next(w, r)
 			return
 		}
 

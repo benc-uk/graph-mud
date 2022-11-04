@@ -19,6 +19,7 @@ const timeEnd = rs.jws.IntDate.get('now + 1year')
 payload.iss = 'http://localhost:8000/no-one'
 payload.sub = 'nano-realms'
 payload.aud = ['nano-realms']
+payload['preferred_username'] = 'demo@example.net'
 payload.nbf = timeNow
 payload.iat = timeNow
 payload.exp = timeEnd

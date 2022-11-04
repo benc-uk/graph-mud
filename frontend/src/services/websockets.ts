@@ -38,4 +38,11 @@ export class WebSocketClient {
       }
     })
   }
+
+  public addClosedCallback(callback: (event: any) => void) {
+    this.socket.addEventListener('close', (event: any) => {
+      console.log('🔌 WebSocket closed:', event)
+      callback(event)
+    })
+  }
 }
