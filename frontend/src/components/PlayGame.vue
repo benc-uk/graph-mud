@@ -29,6 +29,11 @@
       <h2>🧑 Player</h2>
       <textarea v-model="player" class="textBox" readonly></textarea>
     </div>
+    <div class="dialog" v-if="serverError">
+      <h2>Connection Error 😢</h2>
+      <p class="mb-4">{{ serverError }}</p>
+      <button @click="reload()" class="golden-btn">RECONNECT</button>
+    </div>
   </div>
 </template>
 
@@ -48,6 +53,7 @@ export default defineComponent({
       location: '',
       player: '',
       inventory: Array<string>(),
+      serverError: '',
     }
   },
 
@@ -94,6 +100,7 @@ export default defineComponent({
         text: 'Connection to server lost',
         timestamp: new Date(),
       })
+      this.serverError = 'Connection to server lost'
     },
 
     async submitCmd() {
@@ -124,6 +131,10 @@ export default defineComponent({
       this.inventory = []
       this.inventory.push('Some cheese')
       this.inventory.push('A sword')
+    },
+
+    reload() {
+      window.location.reload()
     },
   },
 })

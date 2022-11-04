@@ -59,7 +59,7 @@ func (api API) addRoutes(router *mux.Router) {
 
 // Get existing player details
 func (api API) getPlayer(resp http.ResponseWriter, req *http.Request) {
-	username := req.Header.Get("X-Username")
+	username := req.Context().Value("username").(string)
 
 	res, err := graph.Service.QuerySingleNode("MATCH (p:Player {username: $p0}) RETURN p", []string{username})
 	if err != nil {
@@ -83,9 +83,10 @@ func (api API) getPlayer(resp http.ResponseWriter, req *http.Request) {
 // Handle new player creation
 func (api API) newPlayer(resp http.ResponseWriter, req *http.Request) {
 	var newPlayer NewPlayer
-	username := req.Header.Get("X-Username")
+	username := req.Context().Value("username").(string)
+
 	if username == "" {
-		problem.Wrap(400, req.RequestURI, "username", errors.New("Missing username header")).Send(resp)
+		problem.Wrap(400, req.RequestURI, "username", errors.New("Missing username")).Send(resp)
 		return
 	}
 
@@ -144,9 +145,9 @@ func (api API) newPlayer(resp http.ResponseWriter, req *http.Request) {
 
 // Handle player removal
 func (api API) deletePlayer(resp http.ResponseWriter, req *http.Request) {
-	username := req.Header.Get("X-Username")
+	username := req.Context().Value("username").(string)
 	if username == "" {
-		problem.Wrap(400, req.RequestURI, "username", errors.New("Missing username header")).Send(resp)
+		problem.Wrap(400, req.RequestURI, "username", errors.New("Missing username")).Send(resp)
 		return
 	}
 
@@ -166,10 +167,10 @@ func (api API) deletePlayer(resp http.ResponseWriter, req *http.Request) {
 
 func (api API) executeCommand(resp http.ResponseWriter, req *http.Request) {
 	var cmd Command
-	username := req.Header.Get("X-Username")
+	username := req.Context().Value("username").(string)
 
 	if username == "" {
-		problem.Wrap(400, req.RequestURI, "username", errors.New("Missing username header")).Send(resp)
+		problem.Wrap(400, req.RequestURI, "username", errors.New("Missing username")).Send(resp)
 		return
 	}
 
@@ -191,7 +192,7 @@ func (api API) executeCommand(resp http.ResponseWriter, req *http.Request) {
 }
 
 func (api API) playerLocation(resp http.ResponseWriter, req *http.Request) {
-	username := req.Header.Get("X-Username")
+	username := req.Context().Value("username").(string)
 	if username == "" {
 		problem.Wrap(400, req.RequestURI, "username", errors.New("Missing username header")).Send(resp)
 		return

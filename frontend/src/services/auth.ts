@@ -1,5 +1,6 @@
 import { PublicClientApplication, LogLevel, AccountInfo, AuthenticationResult } from '@azure/msal-browser'
 import { msalInstance } from '@/main'
+import { encode } from 'universal-base64url'
 
 const LOG_LEVEL = LogLevel.Warning
 export let globalClientId = ''
@@ -104,7 +105,7 @@ const fakeAuthRes: AuthenticationResult = {
   account: fakeAccount,
   idToken: '',
   idTokenClaims: {},
-  accessToken: 'header.' + btoa(`{"preferred_username": "${fakeUsername()}"`) + '.signature',
+  accessToken: 'header.' + encode(`{"preferred_username": "${fakeUsername()}"}`) + '.signature',
   fromCache: false,
   expiresOn: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
   tokenType: 'Bearer',

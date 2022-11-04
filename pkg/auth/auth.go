@@ -8,6 +8,7 @@
 package auth
 
 import (
+	"context"
 	"log"
 	"net/http"
 	"os"
@@ -25,9 +26,7 @@ var AppScopeName = "User.Read"
 
 // JWTValidator can be added around any route to protect it
 func JWTValidator(next http.HandlerFunc) http.HandlerFunc {
-
 	return func(w http.ResponseWriter, r *http.Request) {
-
 		// Get auth header & bearer scheme
 		authHeader := r.Header.Get("Authorization")
 		if len(authHeader) == 0 {
@@ -50,7 +49,9 @@ func JWTValidator(next http.HandlerFunc) http.HandlerFunc {
 		// Grab preferred_username claim from token
 		username, err := getClaimFromJWT(authParts[1], "preferred_username")
 		if err == nil && username != "" {
-			r.Header.Set("X-Username", username)
+			// Add username to request context
+			req := context.WithValue(r.Context(), "username", username)
+			r = r.WithContext(req)
 		}
 
 		// Beyond here we fully validate the JWT token
