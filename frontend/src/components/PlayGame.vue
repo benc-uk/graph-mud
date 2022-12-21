@@ -4,7 +4,13 @@
       <input ref="cmdInput" v-model="cmd" class="cmd fullwidth" type="text" spellcheck="false" @keyup.enter="submitCmd" />
 
       <div class="textBox msgLog">
-        <div v-for="m in msgLog" :key="`${m.timestamp}+${m.type}`" class="message" :class="`${m.source}-${m.type}`">{{ m.text }}</div>
+        <div
+          v-for="m in msgLog"
+          :key="`${m.timestamp}+${m.type}`"
+          class="message"
+          :class="`${m.source}-${m.type}`"
+          v-html="m.text.replace(/(\r\n|\r|\n)/g, '<br />')"
+        ></div>
       </div>
 
       <br />
@@ -63,8 +69,12 @@ export default defineComponent({
     wsClient.addMessageCallback(this.handleMessage)
     wsClient.addClosedCallback(this.handleClosed)
 
-    const p = await api.getPlayer()
-    this.player = `You are ${p.name} a ${p.description} ${p.class}`
+    try {
+      const p = await api.getPlayer()
+      this.player = `You are ${p.name} a ${p.description} ${p.class}`
+    } catch (e) {
+      this.$router.push('/')
+    }
 
     await api.cmd('look')
     await this.update()
@@ -129,8 +139,8 @@ export default defineComponent({
       this.location = loc.description
       this.exits = loc.exits
       this.inventory = []
-      this.inventory.push('Some cheese')
-      this.inventory.push('A sword')
+      this.inventory.push('Nothing')
+      // this.inventory.push('A sword')
     },
 
     reload() {

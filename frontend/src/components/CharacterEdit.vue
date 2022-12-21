@@ -32,7 +32,7 @@
 <script lang="ts">
 import { api } from '@/main'
 import { defineComponent } from 'vue'
-import { adjectives } from '@/language'
+import { adjectives, names } from '@/language'
 
 export default defineComponent({
   name: 'CharacterEdit',
@@ -44,10 +44,10 @@ export default defineComponent({
   },
 
   data: () => ({
-    name: '',
+    name: names[Math.floor(Math.random() * names.length)] + ' ' + names[Math.floor(Math.random() * adjectives.length)],
     className: '',
-    description1: '',
-    description2: '',
+    description1: adjectives[Math.floor(Math.random() * adjectives.length)],
+    description2: adjectives[Math.floor(Math.random() * adjectives.length)],
 
     classList: [
       { name: 'Warrior', value: 'warrior' },

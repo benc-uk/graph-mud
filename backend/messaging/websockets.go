@@ -8,7 +8,7 @@ import (
 	"os"
 	"time"
 
-	"github.com/gorilla/mux"
+	"github.com/go-chi/chi/v5"
 	"github.com/gorilla/websocket"
 )
 
@@ -37,8 +37,8 @@ type ConnectRequest struct {
 	Username string `json:"username"`
 }
 
-func AddRoutes(router *mux.Router) {
-	router.HandleFunc("/connect", userConnect)
+func AddRoutes(router chi.Router) {
+	router.Get("/connect", userConnect)
 }
 
 func NewGameMessage(text string, source string, typeStr string) GameMessage {

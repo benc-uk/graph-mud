@@ -1,6 +1,6 @@
 # Common variables
-VERSION := 0.0.1
-BUILD_INFO := Manual build
+VERSION ?= 0.0.4
+BUILD_INFO := Manual build on $(shell hostname) at $(shell date)
 FRONTEND_DIR := ./frontend
 FRONTEND_HOST_DIR := ./frontend-host
 BACKEND_DIR := ./backend

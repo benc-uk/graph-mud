@@ -15,8 +15,11 @@ import (
 	"nano-realms/pkg/auth"
 	"nano-realms/pkg/env"
 
-	"github.com/gorilla/mux"
+	"github.com/go-chi/chi/middleware"
+	"github.com/go-chi/chi/v5"
 	"github.com/neo4j/neo4j-go-driver/v4/neo4j"
+
+	_ "github.com/joho/godotenv/autoload"
 )
 
 // API type is a wrap of the common base API with local implementation
@@ -56,36 +59,44 @@ func main() {
 		log.Println("### ✅ Connected to Neo4j!")
 	}
 
-	// Wrapper API with anonymous inner new Base API
-	router := mux.NewRouter()
+	router := chi.NewRouter()
 
 	graph.InitService(dbDriver)
 	eventProcessor := events.NewProcessor(dbDriver)
 	api := API{
-		api.NewBase(serviceName, version, buildInfo, healthy, router),
+		api.NewBase(serviceName, version, buildInfo, healthy),
 		eventProcessor,
 		commands.NewHandler(eventProcessor),
 	}
 
-	// Main REST API routes
-	api.addRoutes(router)
+	// Some basic middleware
+	router.Use(middleware.RealIP)
+	router.Use(middleware.Logger)
+	router.Use(middleware.Recoverer)
+	// Some custom middleware for CORS & JWT username
+	router.Use(api.SimpleCORSMiddleware)
+	router.Use(api.JWTUsernameMiddleware("preferred_username"))
+
+	// Add Prometheus metrics endpoint, must be before the other routes
+	api.AddMetricsEndpoint(router, "metrics")
+
+	// Add optional root, health & status endpoints
+	api.AddHealthEndpoint(router, "health")
+	api.AddStatusEndpoint(router, "status")
+	api.AddOKEndpoint(router, "")
+
+	// Configure JWT validator with our token store and application scope
+	jwtValidator := auth.NewJWTValidator("https://login.microsoftonline.com/common/discovery/v2.0/keys", "Play.Game")
+
+	// Main REST API routes for the application
+	api.addRoutes(router, jwtValidator)
 
 	// For websocket connections & messaging
 	messaging.Version = version
 	messaging.AddRoutes(router)
 
-	// Extra routes for health and other features
-	api.AddStatus(router)  // Add status and information endpoint
-	api.AddLogging(router) // Add request logging
-	api.AddHealth(router)  // Add health endpoint
-	api.AddMetrics(router) // Expose metrics, in prometheus format
-	api.AddRoot(router)    // Respond to root request with a simple 200 OK
-
-	// Tell the auth middleware what scope to check when validating tokens
-	auth.AppScopeName = "Play.Game"
-
 	srv := &http.Server{
-		Handler:      api.ConfigureCORSHandler(router),
+		Handler:      router,
 		Addr:         fmt.Sprintf(":%d", serverPort),
 		WriteTimeout: 10 * time.Second,
 		ReadTimeout:  10 * time.Second,

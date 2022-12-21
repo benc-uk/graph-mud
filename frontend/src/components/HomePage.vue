@@ -1,11 +1,11 @@
 <template>
   <div id="centerBox">
     <div>
-      <span class="mr-3">Client v{{ version }}</span> <span v-if="loggedIn">User: {{ username }}</span>
+      <span class="mr-3">Pre-Alpha. Client v{{ version }}</span> <span v-if="loggedIn">User: {{ username }}</span>
     </div>
     <div class="logo">🌍 Nano Realms ⚔️</div>
 
-    <button v-if="!loggedIn" @click="login" class="golden-btn">LOGIN</button>
+    <button v-if="!loggedIn" @click="login" class="golden-btn">LOGIN: {{ loginType }}</button>
 
     <router-link v-if="loggedIn && player" to="/play" v-slot="{ href, navigate }">
       <button :href="href" @click="navigate" class="golden-btn mb-3">PLAY</button>
@@ -15,8 +15,11 @@
       Signed-in: {{ username }}
       <hr />
       <ul>
-        <li>Name: {{ player.name }}</li>
-        <li>Class: {{ player.class }}</li>
+        <li><span>Name:</span> {{ player.name }}</li>
+        <li><span>Class:</span> {{ player.class }}</li>
+        <li><span>Rank:</span> {{ player.rank }}</li>
+        <li><span>Gold:</span> {{ player.gold }}</li>
+        <li><span>XP:</span> {{ player.experience }}</li>
       </ul>
     </div>
 
@@ -29,6 +32,10 @@
     <button v-if="loggedIn && player" @click="showDeleteDialog = true" class="golden-btn">DELETE CHARACTER</button>
 
     <button @click="showAboutDialog = true" class="golden-btn mb-2">ABOUT</button>
+
+    <div v-if="error" class="error">
+      {{ error }}
+    </div>
 
     <div class="dialog" v-if="showDeleteDialog">
       <h2>Delete Character</h2>
@@ -73,6 +80,8 @@ export default defineComponent({
     serverInfo: {} as ServerInfo,
     apiEndpoint: api.apiEndpoint,
     clientId: globalClientId || 'Not set, demo mode',
+    loginType: globalClientId ? 'MICROSOFT ACCOUNT' : 'DEMO ACCOUNT',
+    error: '',
   }),
 
   async mounted() {
@@ -83,8 +92,13 @@ export default defineComponent({
       if (isLoggedIn()) {
         this.player = await api.getPlayer()
       }
-    } catch (error) {
-      // That's ok
+    } catch (err) {
+      // We absorb the error if the player is not found
+      if (String(err).includes('Player not found')) {
+        return
+      }
+
+      this.error = `API error '${err}' the server may be down ☹️`
     }
   },
 
@@ -103,12 +117,14 @@ export default defineComponent({
           await msalInstance.setActiveAccount(allAccts[0])
         }
 
+        this.username = getUsername()
         this.player = await api.getPlayer()
       } catch (err) {
         if (String(err).includes('Player not found')) {
           return
         }
-        console.error('### Error login & getting accounts:', err)
+
+        this.error = 'Login error: ' + err
       }
     },
 
@@ -156,5 +172,18 @@ button {
 
 ul {
   text-align: left;
+  margin-bottom: 0;
+}
+
+ul li {
+  list-style: none;
+}
+
+ul li span {
+  font-weight: bold;
+  width: 3rem;
+  display: inline-block;
+  text-align: right;
+  padding-right: 0.5rem;
 }
 </style>

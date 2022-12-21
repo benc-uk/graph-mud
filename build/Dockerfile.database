@@ -5,5 +5,10 @@ COPY world/realm.cypher /root/realm.cypher
 
 EXPOSE 7474 7687
 
+RUN echo "#!/bin/bash" >> /root/init.sh
+RUN echo "echo 'Loading realm data into database...'" >> /root/init.sh
+RUN echo "/var/lib/neo4j/bin/cypher-shell < /root/realm.cypher" >> /root/init.sh
+RUN chmod +x /root/init.sh
+
 ENTRYPOINT [ "tini", "-g", "--", "/startup/docker-entrypoint.sh" ]
 CMD ["neo4j"]

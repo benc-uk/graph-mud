@@ -7,10 +7,6 @@
 
 package api
 
-import (
-	"github.com/gorilla/mux"
-)
-
 // Base holds a standard set of values for all services & APIs
 type Base struct {
 	ServiceName string
@@ -19,10 +15,8 @@ type Base struct {
 	BuildInfo   string
 }
 
-//
 // New creates and returns a new Base API instance
-//
-func NewBase(name, ver, info string, healthy bool, router *mux.Router) *Base {
+func NewBase(name, ver, info string, healthy bool) *Base {
 	b := &Base{
 		ServiceName: name,
 		Healthy:     healthy,

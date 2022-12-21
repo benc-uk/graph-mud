@@ -27,17 +27,30 @@ func (h *Handler) Handle(username string, cmd string) error {
 	cParts := strings.Split(c, " ")
 
 	if slices.Contains([]string{"look", "where", "l"}, cParts[0]) {
-		res, err := graph.Service.GetPlayerLocation(username)
+		locRes, err := graph.Service.GetPlayerLocation(username)
 		if err != nil {
 			return err
 		}
-		locDesc := res.Props["description"].(string)
+		locDesc := locRes.Props["description"].(string)
+		items, err := graph.Service.GetItemsInLocation(locRes.Props["name"].(string))
+		if err != nil {
+			return err
+		}
 
-		messaging.SendToUser(username, fmt.Sprintf("You can see: %s", locDesc), "command", "look")
+		itemsSlice := []string{}
+		for _, item := range items {
+			itemsSlice = append(itemsSlice, item.Props["name"].(string))
+		}
+
+		description := locDesc
+		if len(itemsSlice) > 0 {
+			description += "\nItems: " + strings.Join(itemsSlice, ", ")
+		}
+		messaging.SendToUser(username, fmt.Sprintf("You can see: %s", description), "command", "look")
 		return nil
 	}
 
-	if slices.Contains([]string{"north", "south", "east", "west", "n", "s", "e", "w"}, cParts[0]) {
+	if slices.Contains([]string{"north", "south", "east", "west", "up", "down", "n", "s", "e", "w", "u", "d"}, cParts[0]) {
 		exits, err := graph.Service.QueryMultiRelationship(`MATCH (:Player {username:$p0})-[:IN]->(l:Location) MATCH (l)-[r]->(:Location) RETURN r`, []string{username})
 		if err != nil || exits == nil {
 			return errors.New("Exits not found")

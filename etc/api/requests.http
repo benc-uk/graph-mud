@@ -1,10 +1,12 @@
 @endpoint = http://localhost:8000
-@username = becolem@microsoft.com
+
+// Token with preffered username = becolem@microsoft.com
+@jwt = THIS_IS_IGNORED.eyJwcmVmZXJyZWRfdXNlcm5hbWUiOiJiZWNvbGVtQG1pY3Jvc29mdC5jb20ifQ.THIS_IS_IGNORED
 
 ### Create a new player
 POST {{endpoint}}/player
 Content-Type: application/json
-x-username: {{ username }}
+Authorization: Bearer {{ jwt }}
 
 {
   "name": "Joe Manpuncher",
@@ -12,21 +14,21 @@ x-username: {{ username }}
   "description": "Very smelly"
 }
 
-### Get a player
+### Get the player
 GET {{endpoint}}/player
-x-username: {{ username }}
+Authorization: Bearer {{ jwt }}
 
-### Delete a player
+### Delete the player
 DELETE {{endpoint}}/player
-x-username: {{ username }}
+Authorization: Bearer {{ jwt }}
 
 ### Get player location
 GET {{endpoint}}/player/location
-x-username: {{ username }}
+Authorization: Bearer {{ jwt }}
 
 ### Send command
 POST {{endpoint}}/cmd
-x-username: {{ username }}
+Authorization: Bearer {{ jwt }}
 
 {
   "text": "look"

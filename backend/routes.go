@@ -18,7 +18,7 @@ import (
 	"nano-realms/pkg/auth"
 	"nano-realms/pkg/problem"
 
-	"github.com/gorilla/mux"
+	"github.com/go-chi/chi/v5"
 	"github.com/mitchellh/mapstructure"
 	"golang.org/x/text/cases"
 	"golang.org/x/text/language"
@@ -35,6 +35,9 @@ type NewPlayer struct {
 	Name        string
 	Class       string
 	Description string
+	Gold        int
+	Experience  int
+	Rank        int
 }
 
 type PlayerResp struct {
@@ -42,6 +45,9 @@ type PlayerResp struct {
 	Name        string `mapstructure:"name" json:"name"`
 	Class       string `mapstructure:"class" json:"class"`
 	Description string `mapstructure:"description" json:"description"`
+	Gold        int    `mapstructure:"gold" json:"gold"`
+	Experience  int    `mapstructure:"experience" json:"experience"`
+	Rank        int    `mapstructure:"rank" json:"rank"`
 }
 
 type Command struct {
@@ -49,17 +55,21 @@ type Command struct {
 }
 
 // All routes we need should be registered here
-func (api API) addRoutes(router *mux.Router) {
-	router.HandleFunc("/player", auth.JWTValidator(api.getPlayer)).Methods("GET")
-	router.HandleFunc("/player", auth.JWTValidator(api.newPlayer)).Methods("POST")
-	router.HandleFunc("/player", auth.JWTValidator(api.deletePlayer)).Methods("DELETE")
-	router.HandleFunc("/cmd", auth.JWTValidator(api.executeCommand)).Methods("POST")
-	router.HandleFunc("/player/location", auth.JWTValidator(api.playerLocation)).Methods("GET")
+func (api API) addRoutes(router chi.Router, v auth.JWTValidator) {
+	router.Get("/player", v.Protect(api.getPlayer))
+	router.Post("/player", v.Protect(api.newPlayer))
+	router.Delete("/player", v.Protect(api.deletePlayer))
+	router.Post("/cmd", v.Protect(api.executeCommand))
+	router.Get("/player/location", v.Protect(api.playerLocation))
 }
 
 // Get existing player details
 func (api API) getPlayer(resp http.ResponseWriter, req *http.Request) {
-	username := req.Context().Value("username").(string)
+	username, ok := req.Context().Value("username").(string)
+	if !ok || username == "" {
+		problem.Wrap(400, req.RequestURI, "username", errors.New("Missing username")).Send(resp)
+		return
+	}
 
 	res, err := graph.Service.QuerySingleNode("MATCH (p:Player {username: $p0}) RETURN p", []string{username})
 	if err != nil {
@@ -83,14 +93,14 @@ func (api API) getPlayer(resp http.ResponseWriter, req *http.Request) {
 // Handle new player creation
 func (api API) newPlayer(resp http.ResponseWriter, req *http.Request) {
 	var newPlayer NewPlayer
-	username := req.Context().Value("username").(string)
+	username, ok := req.Context().Value("username").(string)
 
-	if username == "" {
+	if !ok || username == "" {
 		problem.Wrap(400, req.RequestURI, "username", errors.New("Missing username")).Send(resp)
 		return
 	}
 
-	// check player exists
+	// Check player exists
 	exists, err := graph.Service.NodeExists("Player", "username", username)
 	if err != nil || exists {
 		problem.Wrap(409, req.RequestURI, "username", errors.New("Player already exists")).Send(resp)
@@ -118,6 +128,9 @@ func (api API) newPlayer(resp http.ResponseWriter, req *http.Request) {
 			"name":        newPlayer.Name,
 			"class":       newPlayer.Class,
 			"description": newPlayer.Description,
+			"gold":        newPlayer.Gold,
+			"experience":  newPlayer.Experience,
+			"rank":        1,
 		},
 	})
 
@@ -145,8 +158,8 @@ func (api API) newPlayer(resp http.ResponseWriter, req *http.Request) {
 
 // Handle player removal
 func (api API) deletePlayer(resp http.ResponseWriter, req *http.Request) {
-	username := req.Context().Value("username").(string)
-	if username == "" {
+	username, ok := req.Context().Value("username").(string)
+	if !ok || username == "" {
 		problem.Wrap(400, req.RequestURI, "username", errors.New("Missing username")).Send(resp)
 		return
 	}
@@ -167,9 +180,9 @@ func (api API) deletePlayer(resp http.ResponseWriter, req *http.Request) {
 
 func (api API) executeCommand(resp http.ResponseWriter, req *http.Request) {
 	var cmd Command
-	username := req.Context().Value("username").(string)
+	username, ok := req.Context().Value("username").(string)
 
-	if username == "" {
+	if !ok || username == "" {
 		problem.Wrap(400, req.RequestURI, "username", errors.New("Missing username")).Send(resp)
 		return
 	}
@@ -182,6 +195,7 @@ func (api API) executeCommand(resp http.ResponseWriter, req *http.Request) {
 
 	log.Printf("### User %s: %s", username, cmd.Text)
 
+	// So this is pretty core bit of the code, where the REST API calls into the command handler
 	err = api.command.Handle(username, cmd.Text)
 	if err != nil {
 		problem.Wrap(400, req.RequestURI, "command", err).Send(resp)
@@ -192,11 +206,12 @@ func (api API) executeCommand(resp http.ResponseWriter, req *http.Request) {
 }
 
 func (api API) playerLocation(resp http.ResponseWriter, req *http.Request) {
-	username := req.Context().Value("username").(string)
-	if username == "" {
+	username, ok := req.Context().Value("username").(string)
+	if !ok || username == "" {
 		problem.Wrap(400, req.RequestURI, "username", errors.New("Missing username header")).Send(resp)
 		return
 	}
+
 	res, err := graph.Service.GetPlayerLocation(username)
 	if err != nil {
 		problem.Wrap(500, req.RequestURI, "username", err).Send(resp)

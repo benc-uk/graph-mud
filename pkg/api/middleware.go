@@ -8,117 +8,92 @@
 package api
 
 import (
+	"context"
+	"encoding/base64"
 	"encoding/json"
-	"fmt"
+	"log"
 	"net/http"
-	"os"
-	"runtime"
+	"strings"
 
-	"github.com/elastic/go-sysinfo"
-	"github.com/rs/cors"
-
-	"github.com/gorilla/handlers"
-	"github.com/gorilla/mux"
-	"github.com/prometheus/client_golang/prometheus"
-	"github.com/prometheus/client_golang/prometheus/promauto"
-	"github.com/prometheus/client_golang/prometheus/promhttp"
+	"github.com/go-chi/cors"
 )
 
-type Status struct {
-	Service    string `json:"service"`
-	Healthy    bool   `json:"healthy"`
-	Version    string `json:"version"`
-	BuildInfo  string `json:"buildInfo"`
-	Hostname   string `json:"hostname"`
-	OS         string `json:"os"`
-	Arch       string `json:"architecture"`
-	CPU        int    `json:"cpuCount"`
-	GoVersion  string `json:"goVersion"`
-	ClientAddr string `json:"clientAddress"`
-	ServerHost string `json:"serverHost"`
-	Uptime     string `json:"uptime"`
+// Add JWT username to context
+// Tries to get the username from the JWT token, but ignores any errors or missing token
+func (b *Base) JWTUsernameMiddleware(claim string) func(next http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		fn := func(w http.ResponseWriter, r *http.Request) {
+			authHeader := r.Header.Get("Authorization")
+			if len(authHeader) == 0 {
+				next.ServeHTTP(w, r)
+				return
+			}
+			authParts := strings.Split(authHeader, " ")
+			if len(authParts) != 2 {
+				next.ServeHTTP(w, r)
+				return
+			}
+			if strings.ToLower(authParts[0]) != "bearer" {
+				next.ServeHTTP(w, r)
+				return
+			}
+
+			username, err := getClaimFromJWT(authParts[1], claim)
+			if err != nil {
+				next.ServeHTTP(w, r)
+				return
+			}
+
+			ctx := context.WithValue(r.Context(), "username", username)
+			next.ServeHTTP(w, r.WithContext(ctx))
+		}
+		return http.HandlerFunc(fn)
+	}
 }
 
-// AddLogging provides a route for the root URL path, if you need it
-func (b *Base) AddRoot(r *mux.Router) {
-	r.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(http.StatusOK)
-		_, _ = w.Write([]byte("OK"))
-	})
-}
-
-// AddLogging provides logging middleware to the API in Apache Common Log Format.
-func (b *Base) AddLogging(r *mux.Router) {
-	r.Use(func(next http.Handler) http.Handler {
-		return handlers.LoggingHandler(os.Stdout, next)
-	})
-}
-
-// ConfigureCORSHandler provides extremely permissive CORS handler
-func (b *Base) ConfigureCORSHandler(r *mux.Router) http.Handler {
+// SimpleCORSMiddleware adds permissive CORS headers to all responses
+func (b *Base) SimpleCORSMiddleware(next http.Handler) http.Handler {
+	log.Printf("### 🎭 API: configured simple CORS")
 
 	cors := cors.New(cors.Options{
 		AllowedOrigins:   []string{"*"},
-		AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE"},
-		AllowedHeaders:   []string{"*"},
+		AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
+		AllowedHeaders:   []string{"Accept", "Authorization", "Content-Type", "X-CSRF-Token"},
 		AllowCredentials: true,
+		MaxAge:           300,
 	})
 
-	return cors.Handler(r)
-}
-
-// AddMetrics adds Prometheus metrics to the API
-func (b *Base) AddMetrics(r *mux.Router) {
-	r.Handle("/metrics", promhttp.Handler())
-
-	durationHistogram := promauto.NewHistogramVec(prometheus.HistogramOpts{
-		Name:        "response_duration_seconds",
-		Help:        "A histogram of request latencies.",
-		Buckets:     []float64{.001, .01, .1, .2, .5, 1, 2, 5},
-		ConstLabels: prometheus.Labels{"handler": b.ServiceName},
-	}, []string{"method"})
-
-	r.Use(func(next http.Handler) http.Handler {
-		return promhttp.InstrumentHandlerDuration(durationHistogram, next)
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		cors.Handler(next).ServeHTTP(w, r)
 	})
 }
 
-// AddHealth adds a health check endpoint to the API
-func (b *Base) AddHealth(r *mux.Router) {
-	// Add health check endpoint
-	r.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
-		if b.Healthy {
-			w.WriteHeader(http.StatusOK)
-			_, _ = w.Write([]byte("OK"))
-		} else {
-			w.WriteHeader(http.StatusInternalServerError)
-			_, _ = w.Write([]byte(fmt.Sprintf("Service %s is not healthy", b.ServiceName)))
-		}
-	})
-}
+// getClaimFromJWT is a helper to return a claim from a JWT
+// It decodes the raw JWT, parses the JSON and returns the claim
+func getClaimFromJWT(jwtRaw string, claimName string) (string, error) {
+	jwtParts := strings.Split(jwtRaw, ".")
 
-// AddStatus adds a status & info endpoint to the API
-func (b *Base) AddStatus(r *mux.Router) {
-	r.HandleFunc("/status", func(w http.ResponseWriter, r *http.Request) {
-		host, _ := sysinfo.Host()
-		host.Info().Uptime()
+	// Decode base64 main part of the token
+	tokenBytes, err := base64.RawURLEncoding.DecodeString(jwtParts[1])
+	if err != nil {
+		log.Println("### Auth: Error in base64 decoding token", err)
+		return "", err
+	}
 
-		status := Status{
-			Service:    b.ServiceName,
-			Healthy:    b.Healthy,
-			Version:    b.Version,
-			BuildInfo:  b.BuildInfo,
-			Hostname:   host.Info().Hostname,
-			GoVersion:  runtime.Version(),
-			OS:         runtime.GOOS,
-			Arch:       runtime.GOARCH,
-			CPU:        runtime.NumCPU(),
-			ClientAddr: r.RemoteAddr,
-			ServerHost: r.Host,
-		}
+	// Parse token JSON
+	var tokenJSON map[string]interface{}
+	err = json.Unmarshal(tokenBytes, &tokenJSON)
+	if err != nil {
+		log.Println("### Auth: Error in JSON parsing token", err)
+		return "", err
+	}
 
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusOK)
-		_ = json.NewEncoder(w).Encode(status)
-	})
+	// Get the claim
+	claim, ok := tokenJSON[claimName]
+	if !ok {
+		log.Println("### Auth: Claim not found in token", err)
+		return "", err
+	}
+
+	return claim.(string), nil
 }

@@ -8,7 +8,9 @@ import (
 	"os"
 	"time"
 
-	"github.com/gorilla/mux"
+	"github.com/go-chi/chi/v5"
+
+	_ "github.com/joho/godotenv/autoload"
 )
 
 func main() {
@@ -21,11 +23,13 @@ func main() {
 		port = "8001"
 	}
 
-	r := mux.NewRouter()
-	r.HandleFunc("/.config", routeConfig)
+	r := chi.NewRouter()
+
+	// The simple config endpoint
+	r.Get("/.config", routeConfig)
 
 	// Serve SPA from root
-	r.PathPrefix("/").Handler(spaHandler{
+	r.Handle("/", spaHandler{
 		staticPath: dir,
 		indexFile:  "index.html",
 	})

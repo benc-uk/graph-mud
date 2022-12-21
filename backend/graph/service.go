@@ -165,3 +165,8 @@ func (s *GraphService) GetPlayer(username string) (*neo4j.Node, error) {
 	}
 	return player, nil
 }
+
+func (s *GraphService) GetItemsInLocation(locationName string) ([]neo4j.Node, error) {
+	query := "MATCH (l:Location {name: $p0})-[:STORES]->(i:Item) RETURN i"
+	return s.QueryMultiNode(query, []string{locationName})
+}

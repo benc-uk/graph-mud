@@ -2,13 +2,12 @@
 // Copyright (c) Ben Coleman, 2020
 // Licensed under the MIT License.
 //
-// HandlerFunc middleware for checking JWT token validity
+// HandlerFunc route wrapper for checking JWT token validity
 // ----------------------------------------------------------------------------
 
 package auth
 
 import (
-	"context"
 	"log"
 	"net/http"
 	"os"
@@ -19,13 +18,21 @@ import (
 	"github.com/golang-jwt/jwt/v4"
 )
 
-// Fix the JWKS URL to be the one for Azure AD v2
-const jwksURL = `https://login.microsoftonline.com/common/discovery/v2.0/keys`
+// JWTValidator is a struct that can be used to protect routes
+type JWTValidator struct {
+	jwksURL string
+	scope   string
+}
 
-var AppScopeName = "User.Read"
+func NewJWTValidator(jwksURL string, scope string) JWTValidator {
+	return JWTValidator{
+		jwksURL: jwksURL,
+		scope:   scope,
+	}
+}
 
-// JWTValidator can be added around any route to protect it
-func JWTValidator(next http.HandlerFunc) http.HandlerFunc {
+// Protect can be added around any route handler to protect it and enforce JWT auth
+func (v JWTValidator) Protect(next http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		// Get auth header & bearer scheme
 		authHeader := r.Header.Get("Authorization")
@@ -45,26 +52,17 @@ func JWTValidator(next http.HandlerFunc) http.HandlerFunc {
 			return
 		}
 
-		// Just decode the token payload, we don't verify the signature
-		// Grab preferred_username claim from token
-		username, err := getClaimFromJWT(authParts[1], "preferred_username")
-		if err == nil && username != "" {
-			// Add username to request context
-			req := context.WithValue(r.Context(), "username", username)
-			r = r.WithContext(req)
-		}
-
-		// Beyond here we fully validate the JWT token
+		// Beyond here we conditionally attempt to fully validate the JWT token
 
 		// Disable check if client id is not set, this is running in demo / unsecured mode
 		clientID := os.Getenv("AUTH_CLIENT_ID")
 		if clientID == "" {
-			log.Println("### Auth: No validation as AUTH_CLIENT_ID is not set")
+			log.Println("### Auth: Skipping validation, AUTH_CLIENT_ID is not set")
 			next(w, r)
 			return
 		}
 
-		jwks, err := keyfunc.Get(jwksURL, keyfunc.Options{
+		jwks, err := keyfunc.Get(v.jwksURL, keyfunc.Options{
 			RefreshInterval: time.Duration(1) * time.Hour,
 		})
 		if err != nil {
@@ -84,8 +82,8 @@ func JWTValidator(next http.HandlerFunc) http.HandlerFunc {
 		claims := token.Claims.(jwt.MapClaims)
 
 		// Check the scope includes the app scope
-		if !strings.Contains(claims["scp"].(string), AppScopeName) {
-			log.Printf("### Auth: Scope '%s' is missing from token scope '%s'", AppScopeName, claims["scp"])
+		if !strings.Contains(claims["scp"].(string), v.scope) {
+			log.Printf("### Auth: Scope '%s' is missing from token scope '%s'", v.scope, claims["scp"])
 			w.WriteHeader(401)
 			return
 		}

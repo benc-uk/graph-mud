@@ -43,3 +43,6 @@ bin/**
 **/dist/**
 data/**
 tmp/**
+
+# Might contain secrets
+.env

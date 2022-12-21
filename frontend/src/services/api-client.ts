@@ -6,6 +6,9 @@ export interface PlayerInfo {
   name: string
   class: string
   description: string
+  rank: number
+  gold: number
+  experience: number
 }
 
 export interface LocationInfo {
@@ -70,13 +73,10 @@ export class APIClient {
         })
       }
       if (!tokenRes) throw new Error('Failed to get auth token')
-      console.log('tokenRes', tokenRes)
     }
 
     const headers = new Headers({ 'Content-Type': 'application/json' })
     if (tokenRes && tokenRes.accessToken) {
-      console.log('tokenRes.accessToken', tokenRes.accessToken)
-
       headers.append('Authorization', `Bearer ${tokenRes.accessToken}`)
     }
 
