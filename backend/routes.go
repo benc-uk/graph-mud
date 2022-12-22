@@ -2,7 +2,7 @@
 // Copyright (c) Ben Coleman, 2020
 // Licensed under the MIT License.
 //
-// Dapr compatible REST API service for cart
+// All application routes
 // ----------------------------------------------------------------------------
 
 package main
@@ -15,8 +15,8 @@ import (
 
 	"nano-realms/backend/events"
 	"nano-realms/backend/graph"
-	"nano-realms/pkg/auth"
-	"nano-realms/pkg/problem"
+
+	"github.com/benc-uk/go-rest-api/pkg/problem"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/mitchellh/mapstructure"
@@ -55,12 +55,12 @@ type Command struct {
 }
 
 // All routes we need should be registered here
-func (api API) addRoutes(router chi.Router, v auth.JWTValidator) {
-	router.Get("/player", v.Protect(api.getPlayer))
-	router.Post("/player", v.Protect(api.newPlayer))
-	router.Delete("/player", v.Protect(api.deletePlayer))
-	router.Post("/cmd", v.Protect(api.executeCommand))
-	router.Get("/player/location", v.Protect(api.playerLocation))
+func (api API) addRoutes(router chi.Router) {
+	router.Get("/player", api.getPlayer)
+	router.Post("/player", api.newPlayer)
+	router.Delete("/player", api.deletePlayer)
+	router.Post("/cmd", api.executeCommand)
+	router.Get("/player/location", api.playerLocation)
 }
 
 // Get existing player details

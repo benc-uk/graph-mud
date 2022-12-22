@@ -33,3 +33,6 @@ Authorization: Bearer {{ jwt }}
 {
   "text": "look"
 }
+
+### Get status
+GET {{endpoint}}/status

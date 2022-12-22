@@ -11,9 +11,10 @@ import (
 	"nano-realms/backend/events"
 	"nano-realms/backend/graph"
 	"nano-realms/backend/messaging"
-	"nano-realms/pkg/api"
-	"nano-realms/pkg/auth"
-	"nano-realms/pkg/env"
+
+	"github.com/benc-uk/go-rest-api/pkg/api"
+	"github.com/benc-uk/go-rest-api/pkg/auth"
+	"github.com/benc-uk/go-rest-api/pkg/env"
 
 	"github.com/go-chi/chi/middleware"
 	"github.com/go-chi/chi/v5"
@@ -75,21 +76,33 @@ func main() {
 	router.Use(middleware.Recoverer)
 	// Some custom middleware for CORS & JWT username
 	router.Use(api.SimpleCORSMiddleware)
-	router.Use(api.JWTUsernameMiddleware("preferred_username"))
 
-	// Add Prometheus metrics endpoint, must be before the other routes
-	api.AddMetricsEndpoint(router, "metrics")
+	router.Group(func(appRouter chi.Router) {
+		clientID := os.Getenv("AUTH_CLIENT_ID")
+		if clientID == "" {
+			log.Println("### 🚨 No AUTH_CLIENT_ID set, skipping auth validation")
+		} else {
+			log.Println("### 🔐 Auth enabled, validating JWT tokens")
+			jwtValidator := auth.NewJWTValidator(clientID,
+				"https://login.microsoftonline.com/common/discovery/v2.0/keys",
+				"Play.Game")
 
-	// Add optional root, health & status endpoints
-	api.AddHealthEndpoint(router, "health")
-	api.AddStatusEndpoint(router, "status")
-	api.AddOKEndpoint(router, "")
+			appRouter.Use(jwtValidator.Middleware)
+		}
 
-	// Configure JWT validator with our token store and application scope
-	jwtValidator := auth.NewJWTValidator("https://login.microsoftonline.com/common/discovery/v2.0/keys", "Play.Game")
+		appRouter.Use(api.JWTRequestEnricher("username", "preferred_username"))
+		api.addRoutes(appRouter)
+	})
 
-	// Main REST API routes for the application
-	api.addRoutes(router, jwtValidator)
+	router.Group(func(publicRouter chi.Router) {
+		// Add Prometheus metrics endpoint, must be before the other routes
+		api.AddMetricsEndpoint(publicRouter, "metrics")
+
+		// Add optional root, health & status endpoints
+		api.AddHealthEndpoint(publicRouter, "health")
+		api.AddStatusEndpoint(publicRouter, "status")
+		api.AddOKEndpoint(publicRouter, "")
+	})
 
 	// For websocket connections & messaging
 	messaging.Version = version

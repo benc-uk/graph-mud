@@ -3,7 +3,8 @@ module nano-realms
 go 1.19
 
 require (
-	github.com/MicahParks/keyfunc v1.7.0
+	github.com/MicahParks/keyfunc v1.8.0
+	github.com/benc-uk/go-rest-api v1.0.1
 	github.com/elastic/go-sysinfo v1.9.0
 	github.com/go-chi/chi v4.1.1+incompatible
 	github.com/go-chi/chi/v5 v5.0.8
