@@ -19,7 +19,6 @@ RUN go mod download
 
 # Copy in Go source files
 COPY backend/ ./backend/
-COPY pkg/ ./pkg/
 
 # Now run the build
 # Inject version and build details, to be available at runtime 

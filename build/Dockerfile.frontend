@@ -12,7 +12,6 @@ RUN go mod download
 
 # Copy in Go source files
 COPY frontend-host/ ./frontend-host
-COPY pkg/ ./pkg
 
 # Now run the build
 RUN GO111MODULE=on CGO_ENABLED=0 GOOS=linux go build \

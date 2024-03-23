@@ -10,6 +10,8 @@ import (
 
 	"github.com/go-chi/chi/v5"
 
+	"github.com/benc-uk/go-rest-api/pkg/static"
+
 	_ "github.com/joho/godotenv/autoload"
 )
 
@@ -29,9 +31,9 @@ func main() {
 	r.Get("/.config", routeConfig)
 
 	// Serve SPA from root
-	r.Handle("/", spaHandler{
-		staticPath: dir,
-		indexFile:  "index.html",
+	r.Handle("/", static.SpaHandler{
+		StaticPath: dir,
+		IndexFile:  "index.html",
 	})
 
 	srv := &http.Server{
